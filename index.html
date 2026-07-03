@@ -1,499 +1,1148 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ESP SELECTOR · подбор УЭЦН</title>
-    <style>
-        :root {
-            --bg: #f5f5f7;
-            --card-bg: #ffffff;
-            --text-primary: #1d1d1f;
-            --text-secondary: #6e6e73;
-            --text-tertiary: #86868b;
-            --accent: #0071e3;
-            --accent-hover: #0077ed;
-            --accent-light: #e8f2fd;
-            --border: #e5e5ea;
-            --success: #34c759;
-            --warning: #ff9500;
-            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
-            --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
-            --radius-sm: 8px;
-            --radius-md: 14px;
-            --radius-lg: 20px;
-            --transition: 0.22s cubic-bezier(0.25, 0.1, 0.25, 1);
-        }
-        *{margin:0;padding:0;box-sizing:border-box;}
-        body{
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: var(--bg); color: var(--text-primary); line-height: 1.5;
-            -webkit-font-smoothing: antialiased; min-height: 100vh;
-        }
-        body::before{
-            content:''; position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:-1;
-            background: radial-gradient(ellipse at 20% 15%, rgba(0,113,227,0.03) 0%, transparent 60%),
-                        radial-gradient(ellipse at 80% 75%, rgba(0,113,227,0.02) 0%, transparent 55%),
-                        radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0.01) 0%, transparent 70%);
-        }
-        .container{max-width:820px; margin:0 auto; padding:24px 20px 60px; animation: subtleAppear 0.5s ease-out;}
-        @keyframes subtleAppear{from{opacity:0}to{opacity:1}}
-        .header{text-align:center; padding:28px 0 8px;}
-        .header .badge{display:inline-block; font-size:13px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--accent); background:var(--accent-light); padding:6px 16px; border-radius:20px; margin-bottom:14px;}
-        .header h1{font-size:34px; font-weight:700; letter-spacing:-0.02em; color:var(--text-primary);}
-        .header .subtitle{font-size:16px; color:var(--text-secondary); margin-top:6px; font-weight:400;}
-        .card{background:var(--card-bg); border-radius:var(--radius-lg); padding:28px 32px; margin-bottom:18px; box-shadow:var(--shadow-sm); border:1px solid var(--border); transition: box-shadow var(--transition);}
-        .card:hover{box-shadow:var(--shadow-md);}
-        .card-header{display:flex; align-items:center; gap:10px; margin-bottom:22px;}
-        .card-header .icon{width:36px; height:36px; border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;}
-        .icon-input{background:#e8f2fd; color:var(--accent);}
-        .card-header h2{font-size:20px; font-weight:600; letter-spacing:-0.01em;}
-        .form-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px 20px;}
-        .form-grid.col-3{grid-template-columns:1fr 1fr 1fr;}
-        .form-group{display:flex; flex-direction:column; gap:5px;}
-        .form-group.full{grid-column:1/-1;}
-        .form-group label{font-size:13px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.01em;}
-        .form-group .input-wrapper{position:relative; display:flex; align-items:center;}
-        .form-group input, .form-group select{
-            width:100%; padding:12px 14px; font-size:16px; font-family:inherit; border:1.5px solid var(--border);
-            border-radius:var(--radius-sm); background:#fafafa; color:var(--text-primary); transition:all var(--transition);
-            appearance:none; outline:none; font-weight:500;
-        }
-        .form-group input:focus, .form-group select:focus{border-color:var(--accent); background:#fff; box-shadow:0 0 0 4px rgba(0,113,227,0.08);}
-        .form-group select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236e6e73' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; padding-right:36px; cursor:pointer;}
-        .form-group .unit{position:absolute; right:14px; font-size:13px; color:var(--text-tertiary); pointer-events:none;}
-        .form-group input.with-unit{padding-right:50px;}
-        .divider{border:none; border-top:1px solid var(--border); margin:20px 0;}
-        .btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:14px 32px; font-size:16px; font-weight:600; font-family:inherit; border:none; border-radius:28px; cursor:pointer; transition:all var(--transition); letter-spacing:-0.01em;}
-        .btn-primary{background:var(--accent); color:#fff; box-shadow:0 2px 8px rgba(0,113,227,0.3);}
-        .btn-primary:hover{background:var(--accent-hover); box-shadow:0 4px 16px rgba(0,113,227,0.4); transform:translateY(-1px);}
-        .btn-primary:active{transform:scale(0.97);}
-        .btn-block{width:100%; justify-content:center;}
-        .results-container{display:none; animation:fadeSlideIn 0.45s ease-out;}
-        .results-container.visible{display:block;}
-        @keyframes fadeSlideIn{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
-        .result-summary{background:var(--card-bg); border-radius:var(--radius-lg); padding:24px 28px; display:flex; align-items:center; gap:20px; flex-wrap:wrap; box-shadow:var(--shadow-md); border:1px solid var(--border); margin-bottom:16px;}
-        .result-pump-icon{width:56px; height:56px; border-radius:50%; background:var(--accent-light); display:flex; align-items:center; justify-content:center; font-size:26px; flex-shrink:0;}
-        .result-main{flex:1; min-width:180px;}
-        .result-main .pump-name{font-size:22px; font-weight:700; letter-spacing:-0.02em;}
-        .result-main .pump-desc{font-size:14px; color:var(--text-secondary); margin-top:4px;}
-        .result-stats{display:flex; gap:28px; flex-wrap:wrap;}
-        .result-stat{text-align:center;}
-        .result-stat .value{font-size:22px; font-weight:700;}
-        .result-stat .label{font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.03em; margin-top:2px;}
-        .equipment-row{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;}
-        .equipment-row.single{grid-template-columns:1fr;}
-        .eq-card{background:#fafafa; border-radius:var(--radius-md); padding:18px 20px; border:1px solid var(--border); transition:all var(--transition);}
-        .eq-card:hover{background:#fff; box-shadow:var(--shadow-sm);}
-        .eq-card .eq-title{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-tertiary); margin-bottom:6px;}
-        .eq-card .eq-model{font-size:18px; font-weight:700; color:var(--text-primary);}
-        .eq-card .eq-specs{font-size:13px; color:var(--text-secondary); margin-top:4px; line-height:1.6;}
-        .eq-card .eq-specs span{display:inline-block; margin-right:14px;}
-        .note{display:flex; align-items:flex-start; gap:10px; padding:14px 18px; border-radius:var(--radius-md); font-size:13px; color:#8b6914; background:#fffdf5; border:1px solid #f0e4b8; margin-top:12px;}
-        .note.warning{color:#8b3a14; background:#fffaf7; border-color:#f0c8b0;}
-        .alt-table{width:100%; border-collapse: collapse; margin-top:10px; font-size:13px;}
-        .alt-table th, .alt-table td{padding:6px 10px; border:1px solid var(--border); text-align:center;}
-        .alt-table th{background:var(--accent-light); font-weight:600;}
-        @media(max-width:640px){
-            .form-grid,.form-grid.col-3{grid-template-columns:1fr;}
-            .equipment-row{grid-template-columns:1fr;}
-            .header h1{font-size:26px;}
-            .card{padding:18px 16px;}
-            .result-summary{flex-direction:column; text-align:center;}
-            .result-stats{justify-content:center; gap:16px;}
-            .result-main .pump-name{font-size:20px;}
-            .result-stat .value{font-size:18px;}
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ESP Selector · Подбор УЭЦН НТ (встроенный каталог)</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f5f7;--surface:#fff;--surface2:#f2f2f2;
+  --border:rgba(0,0,0,0.08);--text-1:#1d1d1f;--text-2:#6e6e73;--text-3:#aeaeb2;
+  --accent:#0071e3;--accent-h:#0077ed;--accent-soft:rgba(0,113,227,0.10);
+  --green:#34c759;--orange:#ff9500;--red:#ff3b30;--purple:#af52de;
+  --radius:16px;--radius-sm:10px;
+  --shadow:0 2px 20px rgba(0,0,0,0.06),0 1px 4px rgba(0,0,0,0.04);
+  --shadow-lg:0 8px 40px rgba(0,0,0,0.12);
+  --nav-h:56px;--tr:0.18s cubic-bezier(.4,0,.2,1);
+  --font:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',sans-serif;
+  --mono:'SF Mono','Fira Code',ui-monospace,monospace;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text-1);-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column;}
+
+nav{position:sticky;top:0;z-index:100;height:var(--nav-h);
+  background:rgba(255,255,255,0.82);backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;padding:0 24px;}
+.nav-logo{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;}
+.nav-logo svg{color:var(--accent);}
+.nav-tag{font-size:11px;font-weight:500;color:var(--text-3);padding:3px 9px;
+  background:var(--surface2);border-radius:20px;}
+
+.layout{display:grid;grid-template-columns:320px 1fr;gap:0;flex:1;}
+@media(max-width:860px){.layout{grid-template-columns:1fr;}}
+
+.sidebar{background:var(--surface);border-right:1px solid var(--border);
+  padding:24px 20px;position:sticky;top:var(--nav-h);
+  height:calc(100vh - var(--nav-h));overflow-y:auto;}
+@media(max-width:860px){.sidebar{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border);}}
+
+.sidebar-title{font-size:11px;font-weight:700;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--text-2);margin-bottom:16px;}
+
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.field label{font-size:11px;font-weight:600;color:var(--text-2);}
+.hint{font-size:11px;color:var(--text-3);}
+.iw{position:relative;}
+.iw .unit{position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  font:500 12px var(--mono);color:var(--text-3);pointer-events:none;}
+input[type=number],select{
+  width:100%;height:40px;padding:0 10px;
+  border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--bg);color:var(--text-1);font:15px var(--font);
+  outline:none;-webkit-appearance:none;
+  transition:border-color var(--tr),box-shadow var(--tr);}
+input.has-unit{padding-right:44px;}
+input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);background:#fff;}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236e6e73' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;padding-right:30px;cursor:pointer;}
+
+.toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.tl{font-size:12px;font-weight:500;color:var(--text-1);}
+.toggle{position:relative;width:40px;height:24px;cursor:pointer;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.slider{position:absolute;inset:0;background:var(--surface2);border-radius:12px;transition:background var(--tr);}
+.slider:before{content:'';position:absolute;width:20px;height:20px;left:2px;bottom:2px;
+  background:#fff;border-radius:50%;box-shadow:0 2px 4px rgba(0,0,0,.2);transition:transform var(--tr);}
+.toggle input:checked+.slider{background:var(--green);}
+.toggle input:checked+.slider:before{transform:translateX(16px);}
+
+.btn-calc{width:100%;height:46px;background:var(--accent);color:#fff;
+  border:none;border-radius:var(--radius-sm);cursor:pointer;
+  font:600 15px var(--font);transition:all var(--tr);margin-top:4px;letter-spacing:.01em;}
+.btn-calc:hover{background:var(--accent-h);transform:translateY(-1px);
+  box-shadow:0 4px 16px rgba(0,113,227,.35);}
+.btn-calc:active{transform:translateY(0);}
+
+.divider{height:1px;background:var(--border);margin:16px 0;}
+
+.results-pane{padding:24px;overflow-y:auto;}
+
+.page-header{margin-bottom:24px;}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:5px;}
+.page-title{font-size:26px;font-weight:700;}
+.page-desc{font-size:14px;color:var(--text-2);margin-top:4px;}
+
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:400px;gap:12px;text-align:center;}
+.empty svg{color:var(--text-3);}
+.empty h3{font-size:17px;font-weight:600;color:var(--text-2);}
+.empty p{font-size:14px;color:var(--text-3);max-width:280px;}
+
+.summary-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
+  gap:10px;margin-bottom:20px;}
+.sc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);
+  box-shadow:var(--shadow);padding:14px 14px 12px;}
+.sc-label{font-size:11px;font-weight:600;color:var(--text-2);text-transform:uppercase;
+  letter-spacing:.04em;margin-bottom:4px;}
+.sc-val{font:700 18px var(--mono);color:var(--accent);}
+.sc-unit{font-size:11px;color:var(--text-3);}
+
+.pump-list{display:flex;flex-direction:column;gap:12px;}
+.pump-card{background:var(--surface);border:1.5px solid var(--border);
+  border-radius:var(--radius);box-shadow:var(--shadow);
+  overflow:hidden;transition:all var(--tr);cursor:pointer;}
+.pump-card:hover{border-color:var(--accent);box-shadow:var(--shadow-lg);transform:translateY(-2px);}
+.pump-card.best{border-color:var(--accent);background:linear-gradient(to bottom right,#fff,rgba(0,113,227,.03));}
+.pump-card.best::before{content:'★ Лучший выбор';display:block;
+  background:var(--accent);color:#fff;font:600 11px var(--font);
+  letter-spacing:.05em;text-transform:uppercase;padding:6px 16px;
+  border-radius:var(--radius) var(--radius) 0 0;}
+
+.pc-head{display:flex;align-items:center;justify-content:space-between;
+  padding:16px 18px;gap:12px;}
+.pc-title{font-size:17px;font-weight:700;color:var(--text-1);}
+.pc-sub{font-size:12px;color:var(--text-2);margin-top:2px;}
+.pc-score{text-align:right;flex-shrink:0;}
+.pc-score-val{font:700 22px var(--mono);color:var(--accent);}
+.pc-score-label{font-size:11px;color:var(--text-3);}
+
+.pc-body{padding:0 18px 16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;}
+.pc-stat{background:var(--surface2);border-radius:8px;padding:10px 12px;}
+.pcs-label{font-size:11px;font-weight:600;color:var(--text-2);margin-bottom:3px;}
+.pcs-val{font:600 15px var(--mono);color:var(--text-1);}
+.pcs-val.ok{color:var(--green);}
+.pcs-val.warn{color:var(--orange);}
+.pcs-val.bad{color:var(--red);}
+
+.pc-footer{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding:12px 18px;border-top:1px solid var(--border);background:var(--bg);}
+.badge{display:inline-flex;align-items:center;gap:4px;
+  padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;}
+.badge:before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;}
+.badge.ok  {background:rgba(52,199,89,.12);color:#248a3d;}
+.badge.warn{background:rgba(255,149,0,.12);color:#bf5900;}
+.badge.bad {background:rgba(255,59,48,.12);color:#c0392b;}
+.badge.info{background:var(--accent-soft);color:var(--accent);}
+.badge.gray{background:var(--surface2);color:var(--text-2);}
+
+.match-bar{height:4px;background:var(--surface2);border-radius:2px;margin:0 18px 14px;overflow:hidden;}
+.match-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--accent),#5e9eff);transition:width .5s ease;}
+
+/* СТИЛИ ДЛЯ ПЕРЕКЛЮЧАТЕЛЕЙ ГРАФИКОВ И ТУЛТИПА */
+.graph-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 10px 18px 0;
+  align-items: center;
+}
+.graph-tab {
+  flex: 1;
+  padding: 6px 0;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 8px;
+  background: var(--surface2);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all var(--tr);
+  border: 1px solid transparent;
+}
+.graph-tab.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.graph-container {
+  margin: 5px 18px 0;
+  background: var(--surface2);
+  border-radius: 12px;
+  padding: 6px;
+  height: 160px;
+  position: relative;
+}
+.graph-container canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.graph-tooltip {
+  position: absolute;
+  background: rgba(29,29,31,0.92);
+  backdrop-filter: blur(12px);
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.5;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 10;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+.graph-tooltip.visible {
+  opacity: 1;
+}
+
+/* Кнопка экспорта PNG */
+.graph-export-btn {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--tr);
+  z-index: 5;
+}
+.graph-export-btn:hover {
+  background: #fff;
+  border-color: var(--accent);
+}
+.graph-export-btn svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text-2);
+}
+.graph-export-btn:hover svg {
+  color: var(--accent);
+}
+
+.results-count{font-size:13px;color:var(--text-2);margin-bottom:16px;}
+
+.warn-banner{display:flex;gap:10px;background:rgba(255,149,0,.10);border:1px solid rgba(255,149,0,.25);
+  border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:16px;}
+
+.footer-bar{display:flex;justify-content:space-between;align-items:center;
+  padding:12px 24px;background:var(--surface);border-top:1px solid var(--border);
+  font-size:12px;color:var(--text-3);font-weight:500;}
+</style>
 </head>
 <body>
-<div class="container">
-    <header class="header no-print">
-        <div class="badge">инженерный модуль для подбора УЭЦН</div>
-        <h1>ESP SELECTOR</h1>
-        <p class="subtitle">Точный расчёт по каталогу оборудования</p>
-    </header>
 
-    <div class="card no-print">
-        <div class="card-header"><div class="icon icon-input">📐</div><h2>Параметры скважины</h2></div>
-        <div class="form-grid">
-            <div class="form-group"><label>Дебит жидкости, Q</label><div class="input-wrapper"><input type="number" id="flowRate" class="with-unit" placeholder="Например, 120" min="5" max="2000" step="1" value="125"><span class="unit">м³/сут</span></div></div>
-            <div class="form-group"><label>Требуемый напор, H</label><div class="input-wrapper"><input type="number" id="totalHead" class="with-unit" placeholder="Например, 1400" min="50" max="4000" step="10" value="2919"><span class="unit">м</span></div></div>
-            <div class="form-group"><label>Диаметр обсадной колонны</label><select id="casingDiameter">
-                <option value="102">102 мм (2А)</option>
-                <option value="114">114 мм (3,4)</option>
-                <option value="140">140 мм (5)</option>
-                <option value="146" selected>146 мм (5А)</option>
-                <option value="168">168 мм (6)</option>
-            </select></div>
-            <div class="form-group"><label>Плотность жидкости, ρ</label><div class="input-wrapper"><input type="number" id="fluidDensity" class="with-unit" placeholder="850–1100" min="700" max="1300" step="5" value="960"><span class="unit">кг/м³</span></div></div>
-            <div class="form-group"><label>Температура на приёме</label><div class="input-wrapper"><input type="number" id="bottomTemp" class="with-unit" placeholder="60–150" min="20" max="200" step="1" value="85"><span class="unit">°C</span></div></div>
-            <div class="form-group"><label>Обводнённость</label><div class="input-wrapper"><input type="number" id="waterCut" class="with-unit" placeholder="0–100" min="0" max="100" step="1" value="65"><span class="unit">%</span></div></div>
-        </div>
-        <hr class="divider">
-        <div class="form-grid">
-            <div class="form-group"><label>Глубина спуска насоса</label><div class="input-wrapper"><input type="number" id="pumpDepth" class="with-unit" placeholder="Глубина" min="200" max="4000" step="10" value="2600"><span class="unit">м</span></div></div>
-            <div class="form-group"><label>Давление на устье</label><div class="input-wrapper"><input type="number" id="wellheadPressure" class="with-unit" placeholder="Устьевое" min="0" max="100" step="1" value="30"><span class="unit">атм</span></div></div>
-            <div class="form-group"><label>Давление на приёме</label><div class="input-wrapper"><input type="number" id="intakePressure" class="with-unit" placeholder="Если неизвестно – 0" min="0" max="500" step="1" value="0"><span class="unit">атм</span></div></div>
-            <div class="form-group"><label>Частота (ЧРП), Гц</label><div class="input-wrapper"><input type="number" id="frequency" class="with-unit" placeholder="50" min="35" max="70" step="1" value="50"><span class="unit">Гц</span></div></div>
-            <div class="form-group full"><label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="calcHeadAuto" checked style="width:18px;height:18px;">Рассчитывать напор автоматически</label></div>
-        </div>
-        <div style="margin-top:20px;"><button class="btn btn-primary btn-block" onclick="calculateESP()">⚡ Подобрать УЭЦН</button></div>
+<nav>
+  <div class="nav-logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+    </svg>
+    ESP Selector · Подбор погружного оборудования
+  </div>
+  <span class="nav-tag">Насосы · ПЭД · Гидрозащита</span>
+</nav>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="sidebar-title">Параметры скважины</div>
+    <div class="field">
+      <label>Дебит жидкости, Q</label>
+      <div class="iw"><input type="number" id="s_q" placeholder="0" class="has-unit"><span class="unit">м³/сут</span></div>
+      <span class="hint">По замеру ГЗУ</span>
+    </div>
+    <div class="field">
+      <label>Требуемый напор, H</label>
+      <div class="iw"><input type="number" id="s_h" placeholder="0" class="has-unit"><span class="unit">м</span></div>
+      <span class="hint">Или рассчитать ниже ↓</span>
+    </div>
+    <div class="field">
+      <label>Диаметр обсадной колонны</label>
+      <select id="s_cas">
+        <option value="2A">102 мм (2А)</option>
+        <option value="3">114 мм (3, 4)</option>
+        <option value="5">140 мм (5)</option>
+        <option value="5A" selected>146 мм (5А)</option>
+        <option value="6">168 мм (6)</option>
+        <option value="7A">178+ мм (7А)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Плотность жидкости, ρ</label>
+      <div class="iw"><input type="number" id="s_rho" placeholder="900" class="has-unit"><span class="unit">кг/м³</span></div>
+    </div>
+    <div class="field">
+      <label>Вязкость жидкости, μ</label>
+      <div class="iw"><input type="number" id="s_visc" placeholder="" class="has-unit"><span class="unit">сП</span></div>
+      <span class="hint" id="visc_hint">Оставьте пустым — оценим по t и ρ</span>
+    </div>
+    <div class="field">
+      <label>Температура на приёме</label>
+      <div class="iw"><input type="number" id="s_temp" placeholder="80" class="has-unit"><span class="unit">°C</span></div>
+    </div>
+    <div class="field">
+      <label>Обводнённость</label>
+      <div class="iw"><input type="number" id="s_wc" placeholder="0" class="has-unit"><span class="unit">%</span></div>
+    </div>
+    <div class="field">
+      <label>Газовый фактор</label>
+      <div class="iw"><input type="number" id="s_gor" placeholder="0" class="has-unit"><span class="unit">м³/т</span></div>
+      <span class="hint">Для подбора газосепаратора</span>
     </div>
 
-    <!-- Скрытое поле для ручного выбора насоса -->
-    <input type="hidden" id="selectedPumpModel" value="">
-
-    <div class="results-container" id="resultsContainer"></div>
-    <div class="no-print" style="text-align:center;padding:16px;color:var(--text-tertiary);font-size:12px;">
-        ESP SELECTOR · Developer: A.I. Nosar
+    <div class="divider"></div>
+    <div class="sidebar-title">Уточнённый расчёт напора</div>
+    <div class="toggle-row">
+      <span class="tl">Рассчитать H автоматически</span>
+      <label class="toggle"><input type="checkbox" id="auto_h" onchange="toggleAutoH()"><span class="slider"></span></label>
     </div>
+    <div id="auto_h_fields" style="display:none">
+      <div class="field">
+        <label>Глубина спуска L</label>
+        <div class="iw"><input type="number" id="s_L" placeholder="0" class="has-unit"><span class="unit">м</span></div>
+      </div>
+      <div class="field">
+        <label>Динамический уровень Ндин</label>
+        <div class="iw"><input type="number" id="s_ndin" placeholder="0" class="has-unit"><span class="unit">м</span></div>
+      </div>
+      <div class="field">
+        <label>Давление на устье Рбуф</label>
+        <div class="iw"><input type="number" id="s_pbuf" placeholder="5" class="has-unit"><span class="unit">атм</span></div>
+      </div>
+      <div class="field">
+        <label>Затрубное давление Рзатр</label>
+        <div class="iw"><input type="number" id="s_pzatr" placeholder="1" class="has-unit"><span class="unit">атм</span></div>
+      </div>
+      <div class="field">
+        <label>Запас напора, %</label>
+        <div class="iw"><input type="number" id="s_reserve" placeholder="10" class="has-unit"><span class="unit">%</span></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="sidebar-title">Режим работы</div>
+    <div class="field">
+      <label>Частота ЧРП</label>
+      <div class="iw"><input type="number" id="s_freq" placeholder="50" class="has-unit"><span class="unit">Гц</span></div>
+      <span class="hint">50 Гц — номинальный режим (паспортные характеристики)</span>
+    </div>
+    <div class="field">
+      <label>Исполнение насоса</label>
+      <select id="s_exec">
+        <option value="all">Все исполнения</option>
+        <option value="niresist">Нирезист (стандарт)</option>
+        <option value="pkm">ПКМ (износостойкие колёса)</option>
+      </select>
+    </div>
+
+    <button class="btn-calc" onclick="selectESP()">
+      Подобрать оборудование
+    </button>
+  </div>
+
+  <div class="results-pane" id="results_pane">
+    <div class="empty" id="empty_state">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+      </svg>
+      <h3>Введите параметры скважины</h3>
+      <p>Укажите дебит и требуемый напор — система подберёт подходящее оборудование из каталога</p>
+    </div>
+
+    <div id="results_content" style="display:none">
+      <div class="page-header">
+        <div class="eyebrow">Результаты подбора</div>
+        <div class="page-title" id="res_title">—</div>
+        <div class="page-desc" id="res_desc">—</div>
+      </div>
+
+      <div class="summary-strip" id="summary_strip"></div>
+
+      <div id="warn_banner" style="display:none" class="warn-banner">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <p id="warn_text"></p>
+      </div>
+
+      <div class="results-count" id="results_count"></div>
+      <div class="pump-list" id="pump_list"></div>
+    </div>
+  </div>
 </div>
 
+<footer class="footer-bar">
+  <div class="footer-left">Разработчик: А.И. Носар &nbsp;|&nbsp; Developer: A.I. Nosar</div>
+  <div class="footer-right">ESP Selector v5 &nbsp;·&nbsp; © 2026</div>
+</footer>
+
 <script>
-// ==================== КАТАЛОГ ОБОРУДОВАНИЯ ====================
+// ═══════════════════════════════════════════
+// ВСТРОЕННЫЙ КАТАЛОГ ООО «НОВЫЕ ТЕХНОЛОГИИ» 2026
+// ═══════════════════════════════════════════
 const CATALOG = {
-    pumps: [
-        {model:'Х25ЭЦНКИС2А-30И', qNom:30, headStage:5.6, qMin:18, qMax:45, eff:0.38, maxStages:450, diam:69, series:'2А', weightStage:1.6, stagesPerSection:150, maxShaftPower:61, minInnerDiam:87},
-        {model:'Х25ЭЦНКИС2А-50И', qNom:50, headStage:5.2, qMin:30, qMax:70, eff:0.44, maxStages:420, diam:69, series:'2А', weightStage:1.8, stagesPerSection:150, maxShaftPower:61, minInnerDiam:87},
-        {model:'Х25ЭЦНКИС2А-80И', qNom:80, headStage:4.7, qMin:50, qMax:110, eff:0.50, maxStages:380, diam:69, series:'2А', weightStage:2.0, stagesPerSection:150, maxShaftPower:61, minInnerDiam:87},
-        {model:'Х22ЭЦНКИС2А-160', qNom:160, headStage:4.1, qMin:100, qMax:220, eff:0.54, maxStages:320, diam:69, series:'2А', weightStage:2.5, stagesPerSection:150, maxShaftPower:61, minInnerDiam:87},
-        {model:'Х22ЭЦНКИС2А-200', qNom:200, headStage:3.9, qMin:130, qMax:260, eff:0.56, maxStages:280, diam:69, series:'2А', weightStage:2.8, stagesPerSection:150, maxShaftPower:61, minInnerDiam:87},
-        {model:'Х22ЭЦНКИД5-30', qNom:30, headStage:5.6, qMin:18, qMax:45, eff:0.38, maxStages:450, diam:92, series:'5', weightStage:2.1, stagesPerSection:200, maxShaftPower:101, minInnerDiam:121.7},
-        {model:'Х22ЭЦНКИД5-50', qNom:50, headStage:5.2, qMin:30, qMax:70, eff:0.44, maxStages:420, diam:92, series:'5', weightStage:2.3, stagesPerSection:200, maxShaftPower:101, minInnerDiam:121.7},
-        {model:'Х22ЭЦНКИД5-80', qNom:80, headStage:4.7, qMin:50, qMax:110, eff:0.50, maxStages:400, diam:92, series:'5', weightStage:2.5, stagesPerSection:200, maxShaftPower:101, minInnerDiam:121.7},
-        {model:'Х22ЭЦНКИД5-125', qNom:125, headStage:4.3, qMin:80, qMax:170, eff:0.54, maxStages:350, diam:92, series:'5', weightStage:2.7, stagesPerSection:200, maxShaftPower:101, minInnerDiam:121.7},
-        {model:'Х22ЭЦНКИД5-160', qNom:160, headStage:4.1, qMin:100, qMax:220, eff:0.56, maxStages:320, diam:92, series:'5', weightStage:3.0, stagesPerSection:200, maxShaftPower:101, minInnerDiam:121.7},
-        {model:'Х22ЭЦНКИД5А-50', qNom:50, headStage:5.2, qMin:30, qMax:70, eff:0.44, maxStages:380, diam:103, series:'5А', weightStage:3.1, stagesPerSection:250, maxShaftPower:169, minInnerDiam:130},
-        {model:'Х22ЭЦНКИД5А-80', qNom:80, headStage:4.7, qMin:50, qMax:110, eff:0.50, maxStages:360, diam:103, series:'5А', weightStage:3.3, stagesPerSection:250, maxShaftPower:169, minInnerDiam:130},
-        {model:'Х22ЭЦНКИД5А-125', qNom:125, headStage:4.3, qMin:80, qMax:170, eff:0.54, maxStages:320, diam:103, series:'5А', weightStage:3.5, stagesPerSection:250, maxShaftPower:169, minInnerDiam:130},
-        {model:'Х22ЭЦНКИД5А-160', qNom:160, headStage:4.1, qMin:100, qMax:220, eff:0.56, maxStages:300, diam:103, series:'5А', weightStage:3.8, stagesPerSection:250, maxShaftPower:169, minInnerDiam:130},
-        {model:'Х22ЭЦНКИД5А-250', qNom:250, headStage:3.7, qMin:160, qMax:330, eff:0.59, maxStages:260, diam:103, series:'5А', weightStage:4.3, stagesPerSection:250, maxShaftPower:169, minInnerDiam:130},
-        {model:'Х22ЭЦНКИД5А-400', qNom:400, headStage:3.3, qMin:260, qMax:500, eff:0.61, maxStages:210, diam:103, series:'5А', weightStage:5.2, stagesPerSection:250, maxShaftPower:169, minInnerDiam:130},
-        {model:'Х22ЭЦНКИС6-1000', qNom:1000, headStage:2.7, qMin:650, qMax:1200, eff:0.65, maxStages:140, diam:114, series:'6', weightStage:8.0, stagesPerSection:200, maxShaftPower:280, minInnerDiam:143},
-        {model:'Х22ЭЦНКИС7А-1500', qNom:1500, headStage:2.4, qMin:950, qMax:1750, eff:0.67, maxStages:110, diam:136, series:'7А', weightStage:11.0, stagesPerSection:200, maxShaftPower:379, minInnerDiam:165},
-    ],
-    motors: (() => {
-        const base = [];
-        const add = (diam, powers, voltBase, lenPerKW) => {
-            powers.forEach(p => {
-                const voltage = Math.round(voltBase + p * 2.2);
-                const current = Math.round(p * 1000 / (Math.sqrt(3) * voltage * 0.82));
-                const length = +(p * lenPerKW).toFixed(1);
-                const weight = Math.round(length * 40);
-                base.push({model:`ПЭД-${p}-${diam}В5`, power:p, voltage, current, length, diam, weight, series:`ПЭД-${diam}`});
-            });
-        };
-        add(103,[8,12,16,22,28,32,40,45,50,63,80], 480, 0.38);
-        add(117,[8,12,16,22,28,32,40,45,50,63,80,100], 500, 0.34);
-        add(130,[22,28,32,40,45,50,63,80,100,125,160,180], 550, 0.30);
-        add(143,[63,80,100,125,160,180,220], 620, 0.26);
-        return base;
-    })(),
-    cables: [
-        { model: 'КПБК 3×10',  section: 10,   current: 43,  maxTemp: 90 },
-        { model: 'КПБК 3×16',  section: 16,   current: 58,  maxTemp: 90 },
-        { model: 'КПБК 3×25',  section: 25,   current: 78,  maxTemp: 90 },
-        { model: 'КПпБП-130 3×13.3', section: 13.3, current: 55, maxTemp: 130 },
-        { model: 'КПпБП-130 3×16',   section: 16,   current: 64, maxTemp: 130 },
-        { model: 'КПпБП-130 3×21.15', section: 21.15, current: 80, maxTemp: 130 },
-        { model: 'КПпБП-130 3×25',   section: 25,   current: 90, maxTemp: 130 },
-        { model: 'КПпБП-130 3×35',   section: 35,   current: 110, maxTemp: 130 },
-        { model: 'КПпБП-130 3×50',   section: 50,   current: 145, maxTemp: 130 },
-    ],
-    protectors: {
-        103: {model:'2ПА103Д', load:1200, oil:7.0},
-        117: {model:'3ПА114Д', load:1500, oil:11.0},
-        130: {model:'3ПА130Д', load:2000, oil:13.0},
-        143: {model:'3ПА130Д', load:2500, oil:15.0},
-    }
+  "pumps": [
+    {"name":"Х25ЭЦНКИС2А-30И","q50":30,"qmin":20,"qmax":42,"h_sec":560,"n100":8.0,"eff":42,"diam":69,"gab":"2A","mat":"нирезист","minCol":90,"maxPwrDir":61,"maxPwrSoft":77},
+    {"name":"Х25ЭЦНКИС2А-50И","q50":50,"qmin":33,"qmax":68,"h_sec":720,"n100":8.0,"eff":46,"diam":69,"gab":"2A","mat":"нирезист","minCol":90,"maxPwrDir":68,"maxPwrSoft":86},
+    {"name":"Х25ЭЦНКИС2А-60И","q50":60,"qmin":40,"qmax":82,"h_sec":910,"n100":7.0,"eff":48,"diam":69,"gab":"2A","mat":"нирезист","minCol":90,"maxPwrDir":81,"maxPwrSoft":103},
+    {"name":"Х22ЭЦНКИС2А-80И","q50":80,"qmin":52,"qmax":108,"h_sec":719,"n100":10.4,"eff":48,"diam":69,"gab":"2A","mat":"нирезист","minCol":90,"maxPwrDir":65,"maxPwrSoft":82},
+    {"name":"Х22ЭЦНКИС2А-100И","q50":100,"qmin":65,"qmax":135,"h_sec":1122,"n100":20.8,"eff":52,"diam":69,"gab":"2A","mat":"нирезист","minCol":90,"maxPwrDir":81,"maxPwrSoft":125},
+    {"name":"Х22ЭЦНКИС2А-160","q50":160,"qmin":104,"qmax":216,"h_sec":2100,"n100":28.6,"eff":55,"diam":69,"gab":"2A","mat":"нирезист","minCol":90,"maxPwrDir":81,"maxPwrSoft":125},
+    {"name":"Х22ЭЦНКИС2А-200","q50":200,"qmin":130,"qmax":270,"h_sec":675,"n100":33.3,"eff":58,"diam":69,"gab":"2A","mat":"нирезист","minCol":90,"maxPwrDir":81,"maxPwrSoft":103},
+    {"name":"Х25ПЭЦНКИС2А-80И","q50":80,"qmin":52,"qmax":108,"h_sec":719,"n100":10.4,"eff":48,"diam":69,"gab":"2A","mat":"ПКМ","minCol":90,"maxPwrDir":65,"maxPwrSoft":82},
+    {"name":"Х25ЭЦНКИС3-80И","q50":80,"qmin":52,"qmax":108,"h_sec":1500,"n100":26.1,"eff":64,"diam":81,"gab":"3","mat":"нирезист","minCol":102,"maxPwrDir":106,"maxPwrSoft":134},
+    {"name":"Х25ЭЦНКИС3-160","q50":160,"qmin":104,"qmax":216,"h_sec":1085,"n100":30.9,"eff":55,"diam":81,"gab":"3","mat":"нирезист","minCol":102,"maxPwrDir":96,"maxPwrSoft":122},
+    {"name":"Х22ЭЦНКИС3-350","q50":350,"qmin":228,"qmax":473,"h_sec":1162,"n100":46.0,"eff":59,"diam":81,"gab":"3","mat":"нирезист","minCol":102,"maxPwrDir":95,"maxPwrSoft":120},
+    {"name":"X22ЭЦНКИД5-20","q50":20,"qmin":13,"qmax":28,"h_sec":460,"n100":3.6,"eff":42,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":100,"maxPwrSoft":120},
+    {"name":"X22ЭЦНКИС5-25И","q50":25,"qmin":16,"qmax":35,"h_sec":485,"n100":3.2,"eff":42,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":100,"maxPwrSoft":120},
+    {"name":"X22ЭЦНКИД5-30","q50":30,"qmin":20,"qmax":42,"h_sec":520,"n100":4.8,"eff":44,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":120,"maxPwrSoft":150},
+    {"name":"X22ЭЦНКИС5-30И","q50":30,"qmin":20,"qmax":42,"h_sec":468,"n100":3.2,"eff":44,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":120,"maxPwrSoft":150},
+    {"name":"X22ЭЦНКИД5-35","q50":35,"qmin":23,"qmax":49,"h_sec":450,"n100":5.0,"eff":46,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":120,"maxPwrSoft":150},
+    {"name":"X22ЭЦНКИД5-45","q50":45,"qmin":29,"qmax":62,"h_sec":438,"n100":5.0,"eff":50,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":130,"maxPwrSoft":160},
+    {"name":"X22ЭЦНКИД5-50","q50":50,"qmin":33,"qmax":68,"h_sec":510,"n100":6.0,"eff":58,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":130,"maxPwrSoft":160},
+    {"name":"X22ЭЦНКИД5-60","q50":60,"qmin":40,"qmax":82,"h_sec":475,"n100":7.0,"eff":58,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":130,"maxPwrSoft":160},
+    {"name":"X22ЭЦНКИД5-80","q50":80,"qmin":52,"qmax":108,"h_sec":432,"n100":7.0,"eff":60,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":150,"maxPwrSoft":180},
+    {"name":"X22ЭЦНКИД5-80И","q50":80,"qmin":52,"qmax":108,"h_sec":811,"n100":9.0,"eff":62,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":150,"maxPwrSoft":180},
+    {"name":"X22ЭЦНКИД5-100","q50":100,"qmin":65,"qmax":135,"h_sec":466,"n100":10.0,"eff":63,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":160,"maxPwrSoft":200},
+    {"name":"X22ЭЦНКИД5-100И","q50":100,"qmin":65,"qmax":135,"h_sec":465,"n100":10.0,"eff":63,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":160,"maxPwrSoft":200},
+    {"name":"X22ЭЦНКИД5-125","q50":125,"qmin":82,"qmax":168,"h_sec":470,"n100":9.0,"eff":64,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":170,"maxPwrSoft":210},
+    {"name":"X22ЭЦНКИД5-125М","q50":125,"qmin":82,"qmax":168,"h_sec":869,"n100":10.0,"eff":64,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":170,"maxPwrSoft":210},
+    {"name":"X22ЭЦНКИ5-125","q50":125,"qmin":82,"qmax":168,"h_sec":485,"n100":9.0,"eff":64,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":170,"maxPwrSoft":210},
+    {"name":"X22ЭЦНКИД5-160","q50":160,"qmin":104,"qmax":216,"h_sec":329,"n100":10.0,"eff":65,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":180,"maxPwrSoft":220},
+    {"name":"X22ЭЦНКИД5-200И","q50":200,"qmin":130,"qmax":270,"h_sec":304,"n100":16.0,"eff":66,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":200,"maxPwrSoft":250},
+    {"name":"X22ЭЦНКИД5-200М","q50":200,"qmin":130,"qmax":270,"h_sec":1207,"n100":9.0,"eff":66,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":200,"maxPwrSoft":250},
+    {"name":"X22ПЭЦНКИД5-30","q50":30,"qmin":20,"qmax":42,"h_sec":520,"n100":5.0,"eff":48,"diam":92,"gab":"5","mat":"ПКМ","minCol":140,"maxPwrDir":120,"maxPwrSoft":150},
+    {"name":"X22ПЭЦНКИД5-45","q50":45,"qmin":29,"qmax":62,"h_sec":438,"n100":5.0,"eff":52,"diam":92,"gab":"5","mat":"ПКМ","minCol":140,"maxPwrDir":130,"maxPwrSoft":160},
+    {"name":"X22ПЭЦНКИД5-50","q50":50,"qmin":33,"qmax":68,"h_sec":510,"n100":6.0,"eff":58,"diam":92,"gab":"5","mat":"ПКМ","minCol":140,"maxPwrDir":130,"maxPwrSoft":160},
+    {"name":"X22ПЭЦНКИД5-60","q50":60,"qmin":40,"qmax":82,"h_sec":475,"n100":7.0,"eff":60,"diam":92,"gab":"5","mat":"ПКМ","minCol":140,"maxPwrDir":130,"maxPwrSoft":160},
+    {"name":"X22ПЭЦНКИД5-80","q50":80,"qmin":52,"qmax":108,"h_sec":432,"n100":7.0,"eff":62,"diam":92,"gab":"5","mat":"ПКМ","minCol":140,"maxPwrDir":150,"maxPwrSoft":180},
+    {"name":"X22ПЭЦНКИ5-125","q50":125,"qmin":82,"qmax":168,"h_sec":485,"n100":9.0,"eff":64,"diam":92,"gab":"5","mat":"ПКМ","minCol":140,"maxPwrDir":170,"maxPwrSoft":210},
+    {"name":"X22ПЭЦНКИ5-145","q50":145,"qmin":94,"qmax":196,"h_sec":485,"n100":10.0,"eff":65,"diam":92,"gab":"5","mat":"ПКМ","minCol":140,"maxPwrDir":170,"maxPwrSoft":210},
+    {"name":"X22ПЭЦНКИ5-200И","q50":200,"qmin":130,"qmax":270,"h_sec":304,"n100":16.0,"eff":66,"diam":92,"gab":"5","mat":"ПКМ","minCol":140,"maxPwrDir":200,"maxPwrSoft":250},
+    {"name":"X22ЭЦНКИД5А-25И","q50":25,"qmin":16,"qmax":35,"h_sec":1200,"n100":5.0,"eff":48,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":130,"maxPwrSoft":160},
+    {"name":"X22ЭЦНКИД5А-35И","q50":35,"qmin":23,"qmax":49,"h_sec":1050,"n100":6.0,"eff":50,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":130,"maxPwrSoft":160},
+    {"name":"X22ЭЦНКИД5А-35","q50":35,"qmin":23,"qmax":49,"h_sec":1050,"n100":6.0,"eff":50,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":130,"maxPwrSoft":160},
+    {"name":"X22ЭЦНКИД5А-45","q50":45,"qmin":29,"qmax":62,"h_sec":960,"n100":7.0,"eff":52,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":140,"maxPwrSoft":170},
+    {"name":"X22ЭЦНКИД5А-50","q50":50,"qmin":33,"qmax":68,"h_sec":920,"n100":8.0,"eff":54,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":140,"maxPwrSoft":170},
+    {"name":"X22ЭЦНКИД5А-60","q50":60,"qmin":40,"qmax":82,"h_sec":840,"n100":9.0,"eff":56,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":150,"maxPwrSoft":180},
+    {"name":"X22ЭЦНКИД5А-80И","q50":80,"qmin":52,"qmax":108,"h_sec":720,"n100":10.0,"eff":58,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":160,"maxPwrSoft":200},
+    {"name":"X22ЭЦНКИД5А-100","q50":100,"qmin":65,"qmax":135,"h_sec":640,"n100":11.0,"eff":60,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":170,"maxPwrSoft":210},
+    {"name":"X22ЭЦНКИД5А-125","q50":125,"qmin":82,"qmax":168,"h_sec":580,"n100":12.0,"eff":62,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":180,"maxPwrSoft":220},
+    {"name":"X22ЭЦНКИД5А-160И","q50":160,"qmin":104,"qmax":216,"h_sec":500,"n100":14.0,"eff":64,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":200,"maxPwrSoft":240},
+    {"name":"X22ЭЦНКИД5А-160М","q50":160,"qmin":104,"qmax":216,"h_sec":520,"n100":15.0,"eff":64,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":200,"maxPwrSoft":240},
+    {"name":"X22ЭЦНКИД5А-200М","q50":200,"qmin":130,"qmax":270,"h_sec":450,"n100":17.0,"eff":66,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":220,"maxPwrSoft":260},
+    {"name":"X22ЭЦНКИД5А-250","q50":250,"qmin":163,"qmax":338,"h_sec":400,"n100":20.0,"eff":68,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":250,"maxPwrSoft":300},
+    {"name":"X22ЭЦНКИД5А-250М","q50":250,"qmin":163,"qmax":338,"h_sec":420,"n100":21.0,"eff":68,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":250,"maxPwrSoft":300},
+    {"name":"X22ЭЦНКИД5А-280М","q50":280,"qmin":182,"qmax":378,"h_sec":380,"n100":23.0,"eff":70,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":270,"maxPwrSoft":320},
+    {"name":"X22ЭЦНКИД5А-320","q50":320,"qmin":208,"qmax":432,"h_sec":350,"n100":25.0,"eff":72,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":280,"maxPwrSoft":340},
+    {"name":"X22ЭЦНКИД5А-360","q50":360,"qmin":234,"qmax":486,"h_sec":310,"n100":28.0,"eff":73,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":300,"maxPwrSoft":360},
+    {"name":"X22ЭЦНКИД5А-400","q50":400,"qmin":260,"qmax":540,"h_sec":290,"n100":30.0,"eff":74,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":320,"maxPwrSoft":380},
+    {"name":"X22ЭЦНКИД5А-400М","q50":400,"qmin":260,"qmax":540,"h_sec":300,"n100":32.0,"eff":74,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":320,"maxPwrSoft":380},
+    {"name":"X22ЭЦНКИД5А-500","q50":500,"qmin":325,"qmax":675,"h_sec":250,"n100":35.0,"eff":76,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":360,"maxPwrSoft":420},
+    {"name":"X22ЭЦНКИД5А-500М","q50":500,"qmin":325,"qmax":675,"h_sec":260,"n100":38.0,"eff":76,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":360,"maxPwrSoft":420},
+    {"name":"X22ЭЦНКИС5А-700","q50":700,"qmin":455,"qmax":945,"h_sec":200,"n100":45.0,"eff":78,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":400,"maxPwrSoft":480},
+    {"name":"X22ЭЦНКИС5А-800","q50":800,"qmin":520,"qmax":1080,"h_sec":170,"n100":50.0,"eff":79,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":450,"maxPwrSoft":520},
+    {"name":"X22ПЭЦНКИД5А-35И","q50":35,"qmin":23,"qmax":49,"h_sec":1050,"n100":6.0,"eff":50,"diam":103,"gab":"5A","mat":"ПКМ","minCol":130,"maxPwrDir":130,"maxPwrSoft":160},
+    {"name":"X22ПЭЦНКИД5А-60И","q50":60,"qmin":40,"qmax":82,"h_sec":840,"n100":9.0,"eff":56,"diam":103,"gab":"5A","mat":"ПКМ","minCol":130,"maxPwrDir":150,"maxPwrSoft":180},
+    {"name":"X22ПЭЦНКИ5А-160М","q50":160,"qmin":104,"qmax":216,"h_sec":520,"n100":15.0,"eff":64,"diam":103,"gab":"5A","mat":"ПКМ","minCol":130,"maxPwrDir":200,"maxPwrSoft":240},
+    {"name":"X22ПЭЦНКИ5А-250","q50":250,"qmin":163,"qmax":338,"h_sec":400,"n100":20.0,"eff":68,"diam":103,"gab":"5A","mat":"ПКМ","minCol":130,"maxPwrDir":250,"maxPwrSoft":300},
+    {"name":"X22ПЭЦНКИД5А-400","q50":400,"qmin":260,"qmax":540,"h_sec":290,"n100":30.0,"eff":74,"diam":103,"gab":"5A","mat":"ПКМ","minCol":130,"maxPwrDir":320,"maxPwrSoft":380},
+    {"name":"X22ЭЦНКИС6-1000","q50":1000,"qmin":650,"qmax":1350,"h_sec":160,"n100":190,"eff":58,"diam":114,"gab":"6","mat":"нирезист","minCol":168,"maxPwrDir":500,"maxPwrSoft":600},
+    {"name":"X22ЭЦНКИС6-1250","q50":1250,"qmin":812,"qmax":1688,"h_sec":130,"n100":220,"eff":58,"diam":114,"gab":"6","mat":"нирезист","minCol":168,"maxPwrDir":600,"maxPwrSoft":720},
+    {"name":"X22ЭЦНКИС7А-1000","q50":1000,"qmin":650,"qmax":1350,"h_sec":180,"n100":210,"eff":59,"diam":136,"gab":"7A","mat":"нирезист","minCol":178,"maxPwrDir":600,"maxPwrSoft":720},
+    {"name":"X22ЭЦНКИС7А-1500","q50":1500,"qmin":975,"qmax":2025,"h_sec":140,"n100":290,"eff":59,"diam":136,"gab":"7A","mat":"нирезист","minCol":178,"maxPwrDir":700,"maxPwrSoft":840},
+    {"name":"X22ЭЦНКИС7А-1600","q50":1600,"qmin":1040,"qmax":2160,"h_sec":130,"n100":305,"eff":59,"diam":136,"gab":"7A","mat":"нирезист","minCol":178,"maxPwrDir":750,"maxPwrSoft":900},
+    {"name":"ВН5-50-1500","type":"винтовой","q50":50,"qmin":20,"qmax":70,"h_sec":1500,"n100":15.0,"eff":65,"diam":102,"gab":"5A","mat":"винт","minCol":130,"maxPwrDir":100,"maxPwrSoft":140}
+  ],
+  "motors": [
+    {"name":"ПЭД8-103В5","power":8,"diam":103,"type":"пэд","sections":1},
+    {"name":"ПЭД12-103В5","power":12,"diam":103,"type":"пэд","sections":1},
+    {"name":"ПЭД14-103В5","power":14,"diam":103,"type":"пэд","sections":1},
+    {"name":"ПЭД16-103В5","power":16,"diam":103,"type":"пэд","sections":1},
+    {"name":"ПЭД22-103В5","power":22,"diam":103,"type":"пэд","sections":1},
+    {"name":"ПЭД32-103В5","power":32,"diam":103,"type":"пэд","sections":1},
+    {"name":"ПЭД45-103В5","power":45,"diam":103,"type":"пэд","sections":1},
+    {"name":"ПЭД63-103В5","power":63,"diam":103,"type":"пэд","sections":1},
+    {"name":"ПЭД80-103В5","power":80,"diam":103,"type":"пэд","sections":1},
+    {"name":"ПЭДС90-103В5","power":90,"diam":103,"type":"пэд","sections":2},
+    {"name":"ПЭДС125-103В5","power":125,"diam":103,"type":"пэд","sections":2},
+    {"name":"ПЭДС160-103В5","power":160,"diam":103,"type":"пэд","sections":2},
+    {"name":"ПЭДС210-103В5","power":210,"diam":103,"type":"пэд","sections":3},
+    {"name":"ПЭД8-117В5","power":8,"diam":117,"type":"пэд","sections":1},
+    {"name":"ПЭД16-117В5","power":16,"diam":117,"type":"пэд","sections":1},
+    {"name":"ПЭД22-117В5","power":22,"diam":117,"type":"пэд","sections":1},
+    {"name":"ПЭД32-117В5","power":32,"diam":117,"type":"пэд","sections":1},
+    {"name":"ПЭД45-117В5","power":45,"diam":117,"type":"пэд","sections":1},
+    {"name":"ПЭД63-117В5","power":63,"diam":117,"type":"пэд","sections":1},
+    {"name":"ПЭД80-117В5","power":80,"diam":117,"type":"пэд","sections":1},
+    {"name":"ПЭД100-117В5","power":100,"diam":117,"type":"пэд","sections":1},
+    {"name":"ПЭДС90-117В5","power":90,"diam":117,"type":"пэд","sections":2},
+    {"name":"ПЭДС125-117В5","power":125,"diam":117,"type":"пэд","sections":2},
+    {"name":"ПЭДС180-117В5","power":180,"diam":117,"type":"пэд","sections":2},
+    {"name":"ПЭДС250-117В5","power":250,"diam":117,"type":"пэд","sections":3},
+    {"name":"ПЭДС360-117В5","power":360,"diam":117,"type":"пэд","sections":3},
+    {"name":"ПЭД16-130В5","power":16,"diam":130,"type":"пэд","sections":1},
+    {"name":"ПЭД22-130В5","power":22,"diam":130,"type":"пэд","sections":1},
+    {"name":"ПЭД32-130В5","power":32,"diam":130,"type":"пэд","sections":1},
+    {"name":"ПЭД45-130В5","power":45,"diam":130,"type":"пэд","sections":1},
+    {"name":"ПЭД63-130В5","power":63,"diam":130,"type":"пэд","sections":1},
+    {"name":"ПЭД80-130В5","power":80,"diam":130,"type":"пэд","sections":1},
+    {"name":"ПЭД100-130В5","power":100,"diam":130,"type":"пэд","sections":1},
+    {"name":"ПЭД125-130В5","power":125,"diam":130,"type":"пэд","sections":1},
+    {"name":"ПЭД160-130В5","power":160,"diam":130,"type":"пэд","sections":1},
+    {"name":"ПЭД180-130В5","power":180,"diam":130,"type":"пэд","sections":1},
+    {"name":"ПЭДС200-130В5","power":200,"diam":130,"type":"пэд","sections":2},
+    {"name":"ПЭДС250-130В5","power":250,"diam":130,"type":"пэд","sections":2},
+    {"name":"ПЭДС360-130В5","power":360,"diam":130,"type":"пэд","sections":3},
+    {"name":"ПЭДС500-130В5","power":500,"diam":130,"type":"пэд","sections":3},
+    {"name":"ПЭД32-143В5","power":32,"diam":143,"type":"пэд","sections":1},
+    {"name":"ПЭД63-143В5","power":63,"diam":143,"type":"пэд","sections":1},
+    {"name":"ПЭД100-143В5","power":100,"diam":143,"type":"пэд","sections":1},
+    {"name":"ПЭД160-143В5","power":160,"diam":143,"type":"пэд","sections":1},
+    {"name":"ПЭД220-143В5","power":220,"diam":143,"type":"пэд","sections":1},
+    {"name":"ПЭДС260-143В5","power":260,"diam":143,"type":"пэд","sections":2},
+    {"name":"ПЭДС400-143В5","power":400,"diam":143,"type":"пэд","sections":3},
+    {"name":"ПЭДС555-143В5","power":555,"diam":143,"type":"пэд","sections":3},
+    {"name":"ВПЭД18-117","power":18,"diam":117,"type":"впэд","sections":1},
+    {"name":"ВПЭД27-117","power":27,"diam":117,"type":"впэд","sections":1},
+    {"name":"ВПЭД45-117","power":45,"diam":117,"type":"впэд","sections":1},
+    {"name":"ВПЭД60-117","power":60,"diam":117,"type":"впэд","sections":1},
+    {"name":"ВПЭД80-117","power":80,"diam":117,"type":"впэд","sections":1},
+    {"name":"ВПЭД100-117","power":100,"diam":117,"type":"впэд","sections":1},
+    {"name":"ВПЭД140-117","power":140,"diam":117,"type":"впэд","sections":1},
+    {"name":"ВПЭД250-117","power":250,"diam":117,"type":"впэд","sections":1},
+    {"name":"ВПЭДГ14-81","power":14,"diam":81,"type":"впэд","sections":1},
+    {"name":"ВПЭДГ28-81","power":28,"diam":81,"type":"впэд","sections":1},
+    {"name":"ВПЭДГ40-81","power":40,"diam":81,"type":"впэд","sections":1},
+    {"name":"ВПЭДГ55-81","power":55,"diam":81,"type":"впэд","sections":1},
+    {"name":"ВПЭДГ70-81","power":70,"diam":81,"type":"впэд","sections":1}
+  ],
+  "hydros": [
+    {"name":"ПА92Д","diam":92,"axial_kg":100,"temp":140,"oil":6.0},
+    {"name":"2ПА92Д","diam":92,"axial_kg":950,"temp":140,"oil":6.0},
+    {"name":"3ПА92Д","diam":92,"axial_kg":950,"temp":360,"oil":8.0},
+    {"name":"4ПА92Д","diam":92,"axial_kg":750,"temp":140,"oil":6.0},
+    {"name":"2ПА103Д","diam":103,"axial_kg":1200,"temp":140,"oil":6.0},
+    {"name":"3ПА114Д","diam":114,"axial_kg":1500,"temp":500,"oil":11.0},
+    {"name":"ПАВ92Д","diam":92,"axial_kg":360,"temp":360,"oil":6.0},
+    {"name":"ПАД92","diam":92,"axial_kg":360,"temp":360,"oil":2.5}
+  ],
+  "gasSeps": [
+    {"name":"Г2ГИ-5-250","maxQ":250,"gab":"5"},
+    {"name":"Г2ВИК-5А-250Э","maxQ":250,"gab":"5A"},
+    {"name":"Г2ГИК-5А-500МЭ/КП","maxQ":500,"gab":"5A"},
+    {"name":"ГД2ГИ-5-250","maxQ":250,"gab":"5","type":"диспергатор"},
+    {"name":"ГД2ВИК-5А-250Э","maxQ":250,"gab":"5A","type":"диспергатор"},
+    {"name":"ГД2ГИК-5А-500МЭ/КП","maxQ":500,"gab":"5A","type":"диспергатор"}
+  ]
 };
 
-const TMPN_CATALOG = [
-    { type: "ТМПН-40/463",   power: 40,  currentNN: 87,  voltageNN: 463,  steps: 5,  stepVoltage: 463/5 },
-    { type: "ТМПН-63/611",   power: 63,  currentNN: 103, voltageNN: 611,  steps: 10, stepVoltage: 611/10 },
-    { type: "ТМПН-100/736",  power: 100, currentNN: 136, voltageNN: 736,  steps: 10, stepVoltage: 736/10 },
-    { type: "ТМПН-160/1090", power: 160, currentNN: 147, voltageNN: 1090, steps: 10, stepVoltage: 1090/10 },
-    { type: "ТМПН-250/2247", power: 250, currentNN: 111, voltageNN: 2247, steps: 25, stepVoltage: 2247/25 },
-    { type: "ТМПН-400/6",    power: 400, currentNN: 160, voltageNN: 2500, steps: 10, stepVoltage: 2500/10 },
-    { type: "ТМПН-630/6",    power: 630, currentNN: 252, voltageNN: 2500, steps: 10, stepVoltage: 2500/10 },
-    { type: "ТМПН-1000/6",   power: 1000,currentNN: 400, voltageNN: 2500, steps: 10, stepVoltage: 2500/10 },
-    { type: "ТМПН-1600/6",   power: 1600,currentNN: 640, voltageNN: 2500, steps: 10, stepVoltage: 2500/10 }
-];
+// ═══════════════════════════════════════════
+// ВСПОМОГАТЕЛЬНЫЕ КОНСТАНТЫ И ФУНКЦИИ
+// ═══════════════════════════════════════════
+const CAS_MAP = {
+  '2A': ['2A','3'],
+  '3':  ['2A','3'],
+  '5':  ['2A','3','5'],
+  '5A': ['2A','3','5','5A'],
+  '6':  ['2A','3','5','5A','6'],
+  '7A': ['2A','3','5','5A','6','7A'],
+};
+const GAB_TO_PED = {
+  '2A':  [103],
+  '3':   [103],
+  '5':   [103, 117],
+  '5A':  [117, 130],
+  '6':   [130, 143],
+  '7A':  [143],
+};
 
-// ==================== ФУНКЦИИ ПОДБОРА ====================
-function calculateHeadFromDepth(pumpDepth, fluidDensity, wellheadPressureAtm, intakePressureAtm = 0) {
-    const headFromPressure = ((wellheadPressureAtm - intakePressureAtm) * 10.197) / (fluidDensity / 1000);
-    return Math.round(pumpDepth + headFromPressure);
+function v(id){ return parseFloat(document.getElementById(id)?.value)||0; }
+function vc(id){ return document.getElementById(id)?.value||''; }
+
+function toggleAutoH(){
+  document.getElementById('auto_h_fields').style.display =
+    document.getElementById('auto_h').checked ? 'block' : 'none';
 }
 
-function getMinInnerDiamLimit(casingDiam) {
-    const map = {
-        102: 87,
-        114: 100,
-        140: 121.7,
-        146: 130,
-        168: 143
-    };
-    return map[casingDiam] || 121.7;
+function calcH(){
+  const L=v('s_L'), Ndin=v('s_ndin'), Pbuf=v('s_pbuf')||5, Pzatr=v('s_pzatr')||1;
+  const rho=v('s_rho')||900, reserve=(v('s_reserve')||10)/100;
+  if(!L||!Ndin) return 0;
+  const hLiq = L - Ndin;
+  const pDiff = (Pbuf - Pzatr) * 100000 / (rho * 9.81);
+  return Math.round((hLiq + pDiff) * (1 + reserve));
 }
 
-// Сбор всех насосов, подходящих по диаметру и дебиту
-function findAllSuitablePumps(flowRate, casingDiam) {
-    const minInnerLimit = getMinInnerDiamLimit(casingDiam);
-    let candidates = CATALOG.pumps.filter(p => p.minInnerDiam <= minInnerLimit && 
-                                               flowRate >= p.qMin*0.7 && flowRate <= p.qMax*1.2);
-    if (candidates.length === 0) {
-        candidates = CATALOG.pumps.filter(p => p.minInnerDiam <= minInnerLimit);
+function estimateViscosity(temp, rho) {
+  const T = temp + 273.15;
+  return parseFloat((Math.exp(-12.32 + 5164/T) * Math.exp((rho-850)/100)).toFixed(1));
+}
+
+function correctForViscosity(Q, H, eff, viscosity) {
+  if (viscosity <= 5) return { Q, H, eff };
+  const Re = (Q * 1000) / (viscosity * 0.001);
+  let kQ=1, kH=1, kEff=1;
+  if (Re < 1000) { kQ=0.65; kH=0.75; kEff=0.55; }
+  else if (Re < 5000) { kQ=0.90; kH=0.92; kEff=0.88; }
+  return { Q: Q*kQ, H: H*kH, eff: eff*kEff };
+}
+
+function pickMotor(pumpPowerKw, gabPump, freq, motorPreference) {
+  const allowedD = GAB_TO_PED[gabPump] || [103,117];
+  const isVent = (freq < 35 && motorPreference !== 'пэд') || motorPreference === 'впэд';
+  let candidates = CATALOG.motors.filter(m =>
+    allowedD.includes(m.diam) &&
+    ((isVent && m.type==='впэд') || (!isVent && m.type==='пэд')) &&
+    m.power >= pumpPowerKw * 1.15
+  );
+  if (!candidates.length && !isVent)
+    candidates = CATALOG.motors.filter(m => allowedD.includes(m.diam) && m.type==='впэд' && m.power >= pumpPowerKw * 1.15);
+  candidates.sort((a,b) => a.power - b.power);
+  return candidates[0] || null;
+}
+
+function pickHydro(pumpPowerKw, gabPump) {
+  const axial = pumpPowerKw * 145;
+  return CATALOG.hydros
+    .filter(h => h.axial_kg >= axial)
+    .sort((a,b) => a.axial_kg - b.axial_kg)[0] || null;
+}
+
+function pickGasSep(gor, q, gab) {
+  if (!gor || gor < 10) return null;
+  return CATALOG.gasSeps
+    .filter(s => s.maxQ >= q && s.gab === gab)
+    .sort((a,b) => a.maxQ - b.maxQ)[0] || null;
+}
+
+// ═══════════════════════════════════════════
+//  ПОЛНОСТЬЮ ПЕРЕРАБОТАННАЯ ФУНКЦИЯ ОТРИСОВКИ ГРАФИКОВ
+// ═══════════════════════════════════════════
+function drawPumpGraph(canvas, pCorr, Q50target, H50target, k, mode = 'head', tooltipDiv) {
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = canvas.clientWidth * dpr;
+  canvas.height = canvas.clientHeight * dpr;
+  ctx.scale(dpr, dpr);
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
+  const pad = { top: 20, right: 25, bottom: 30, left: 55 };
+  const pw = w - pad.left - pad.right;
+  const ph = h - pad.top - pad.bottom;
+
+  const rho = parseFloat(document.getElementById('s_rho')?.value || 900);
+  const gConst = 9.81;
+
+  const curves = buildCurves(pCorr, k, rho, gConst);
+
+  let yMax, getY, yLabel, curveColor = '#0071e3';
+  switch (mode) {
+    case 'head':
+      yMax = curves.head.max * 1.1;
+      getY = (q) => curves.head.at(q);
+      yLabel = 'Напор, м';
+      break;
+    case 'power':
+      yMax = Math.ceil(curves.power.max * 1.2 / 5) * 5;
+      getY = (q) => curves.power.at(q);
+      yLabel = 'Мощность, кВт';
+      curveColor = '#ff9500';
+      break;
+    case 'eff':
+      yMax = 105;
+      getY = (q) => curves.eff.at(q) * 100;
+      yLabel = 'КПД, %';
+      curveColor = '#34c759';
+      break;
+    default: yMax = curves.head.max; getY = (q) => curves.head.at(q);
+  }
+
+  const xToQ = (x) => pCorr.qmin + (x / pw) * (pCorr.qmax - pCorr.qmin);
+  const qToX = (q) => ((q - pCorr.qmin) / (pCorr.qmax - pCorr.qmin)) * pw;
+  const valToY = (val) => ph * (1 - val / yMax);
+  const yToVal = (y) => (1 - y / ph) * yMax;
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, w, h);
+
+  if (mode === 'head') {
+    const xRecL = qToX(pCorr.q50 * 0.7);
+    const xRecR = qToX(pCorr.q50 * 1.2);
+    ctx.fillStyle = 'rgba(52,199,89,0.12)';
+    ctx.fillRect(xRecL, 0, xRecR - xRecL, ph);
+    ctx.fillStyle = 'rgba(255,149,0,0.08)';
+    ctx.fillRect(qToX(pCorr.qmin), 0, xRecL - qToX(pCorr.qmin), ph);
+    ctx.fillRect(xRecR, 0, qToX(pCorr.qmax) - xRecR, ph);
+  }
+
+  ctx.save();
+  ctx.translate(pad.left, pad.top);
+  drawGrid(ctx, pw, ph, 5, yMax, xToQ, valToY, qToX, pCorr.qmin, pCorr.qmax, yLabel);
+
+  ctx.beginPath();
+  ctx.strokeStyle = curveColor;
+  ctx.lineWidth = 2.5;
+  const steps = 100;
+  let first = true;
+  for (let i = 0; i <= steps; i++) {
+    const q = pCorr.qmin + (i / steps) * (pCorr.qmax - pCorr.qmin);
+    const val = getY(q);
+    if (isNaN(val)) continue;
+    const cx = qToX(q);
+    const cy = valToY(val);
+    if (first) { ctx.moveTo(cx, cy); first = false; }
+    else ctx.lineTo(cx, cy);
+  }
+  ctx.stroke();
+
+  if (mode === 'head' && H50target > 0) {
+    ctx.beginPath();
+    ctx.strokeStyle = '#0071e3';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 3]);
+    const yHreq = valToY(H50target);
+    ctx.moveTo(0, yHreq); ctx.lineTo(pw, yHreq);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  if (mode === 'power' && pCorr.maxPwrDir) {
+    const maxPwr = pCorr.maxPwrDir;
+    ctx.beginPath();
+    ctx.strokeStyle = '#ff3b30';
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash([3, 3]);
+    const yP = valToY(maxPwr);
+    ctx.moveTo(0, yP); ctx.lineTo(pw, yP);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#ff3b30';
+    ctx.font = '9px -apple-system, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(`max ${maxPwr} кВт`, pw - 5, yP - 4);
+  }
+
+  const nomX = qToX(pCorr.q50);
+  const nomY = valToY(getY(pCorr.q50));
+  drawMarker(ctx, nomX, nomY, '#aeaeb2', '#fff', 4);
+
+  let targetQ = Q50target;
+  if (targetQ < pCorr.qmin) targetQ = pCorr.qmin;
+  if (targetQ > pCorr.qmax) targetQ = pCorr.qmax;
+  const targetH = getY(targetQ);
+  let targetX = qToX(targetQ);
+  let targetY = valToY(targetH);
+  drawMarker(ctx, targetX, targetY, '#ff9500', '#fff', 6);
+
+  ctx.restore();
+
+  canvas._drawData = {
+    pad, pw, ph, pCorr, curves, k, rho, gConst,
+    xToQ, qToX, valToY, yToVal,
+    getY, yMax, mode,
+    H50target, Q50target: targetQ,
+    targetX, targetY,
+    tooltipDiv
+  };
+
+  if (!canvas._eventsSet) {
+    canvas._eventsSet = true;
+    setupCanvasEvents(canvas);
+  }
+}
+
+function buildCurves(p, k, rho, gConst) {
+  const Qmin = p.qmin;
+  const Qmax = p.qmax;
+  const Q50 = p.q50;
+  const Hmax = p.h_sec;
+
+  const A = -Hmax * 0.25 / ((Q50 - Qmin) * (Q50 - Qmax));
+  const B = -2 * A * Q50;
+  const C_head = Hmax - A * Q50 * Q50 - B * Q50;
+
+  const headAt = (q) => {
+    if (q < Qmin || q > Qmax) return NaN;
+    return A * q * q + B * q + C_head;
+  };
+
+  const effMax = p.eff / 100;
+  const tScale = 1 / (Qmax - Qmin);
+  const effAt = (q) => {
+    const t = (q - Q50) * tScale;
+    return Math.max(0.35, Math.min(effMax, effMax * (1 - 0.35 * t * t)));
+  };
+
+  const powerAt = (q) => {
+    const H = headAt(q);
+    const eff = effAt(q);
+    if (eff <= 0 || isNaN(H)) return 0;
+    return (rho * gConst * q * H) / (3.6e6 * eff);
+  };
+
+  const samples = 100;
+  let maxHead = 0, maxPower = 0;
+  for (let i = 0; i <= samples; i++) {
+    const q = Qmin + (i / samples) * (Qmax - Qmin);
+    const h = headAt(q);
+    if (h > maxHead) maxHead = h;
+    const pw = powerAt(q);
+    if (pw > maxPower) maxPower = pw;
+  }
+
+  return {
+    head: { at: headAt, max: maxHead },
+    power: { at: powerAt, max: maxPower },
+    eff: { at: effAt, max: effMax }
+  };
+}
+
+function drawGrid(ctx, pw, ph, nGrid, yMax, xToQ, valToY, qToX, qMin, qMax, yLabel) {
+  ctx.strokeStyle = '#e5e5ea';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= nGrid; i++) {
+    const y = (i / nGrid) * ph;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(pw, y); ctx.stroke();
+  }
+  const qRange = qMax - qMin;
+  const roughStep = qRange / nGrid;
+  const step = niceStep(roughStep);
+  let qTick = Math.ceil(qMin / step) * step;
+  while (qTick <= qMax) {
+    const x = ((qTick - qMin) / qRange) * pw;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, ph); ctx.stroke();
+    qTick += step;
+  }
+
+  ctx.strokeStyle = '#8e8e93';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, ph); ctx.lineTo(pw, ph); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, ph); ctx.stroke();
+
+  ctx.fillStyle = '#6e6e73';
+  ctx.font = '10px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  qTick = Math.ceil(qMin / step) * step;
+  while (qTick <= qMax) {
+    const x = ((qTick - qMin) / qRange) * pw;
+    ctx.fillText(Math.round(qTick), x, ph + 14);
+    qTick += step;
+  }
+  ctx.fillText('Подача, м³/сут', pw / 2, ph + 26);
+
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= nGrid; i++) {
+    const val = (i / nGrid) * yMax;
+    ctx.fillText(val.toFixed(1), -6, ph - (i / nGrid) * ph + 4);
+  }
+  ctx.save();
+  ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = 'center';
+  ctx.fillText(yLabel, -ph / 2, -40);
+  ctx.restore();
+}
+
+function niceStep(rough) {
+  const magnitude = Math.pow(10, Math.floor(Math.log10(rough)));
+  const residual = rough / magnitude;
+  if (residual <= 1.5) return magnitude;
+  if (residual <= 3) return 2 * magnitude;
+  if (residual <= 7) return 5 * magnitude;
+  return 10 * magnitude;
+}
+
+function drawMarker(ctx, x, y, fill, stroke, r) {
+  ctx.save();
+  ctx.fillStyle = fill;
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}
+
+function setupCanvasEvents(canvas) {
+  let dragging = false;
+
+  canvas.addEventListener('mousedown', (e) => {
+    const data = canvas._drawData;
+    if (!data) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left - data.pad.left;
+    const my = e.clientY - rect.top - data.pad.top;
+
+    const dx = mx - data.targetX;
+    const dy = my - data.targetY;
+    if (Math.sqrt(dx*dx + dy*dy) < 10) {
+      dragging = true;
+      canvas.style.cursor = 'grabbing';
+      e.preventDefault();
     }
-    candidates.sort((a,b) => Math.abs(a.qNom - flowRate) - Math.abs(b.qNom - flowRate));
-    return candidates;
-}
+  });
 
-function findMotor(requiredPowerKW, casingDiam) {
-    let maxMotorDiam;
-    if (casingDiam >= 168) maxMotorDiam = 130;
-    else if (casingDiam >= 146) maxMotorDiam = 117;
-    else if (casingDiam >= 140) maxMotorDiam = 103;
-    else maxMotorDiam = 103;
-    let candidates = CATALOG.motors.filter(m => m.diam <= maxMotorDiam && m.power >= requiredPowerKW);
-    if (candidates.length === 0) candidates = CATALOG.motors.filter(m => m.diam <= maxMotorDiam);
-    if (candidates.length === 0) candidates = CATALOG.motors;
-    candidates.sort((a,b) => a.power - b.power);
-    return candidates[0];
-}
+  window.addEventListener('mousemove', (e) => {
+    const data = canvas._drawData;
+    if (!data) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left - data.pad.left;
+    const my = e.clientY - rect.top - data.pad.top;
+    const tooltip = data.tooltipDiv;
 
-function selectCable(motorCurrent, bottomTemp) {
-    const isHot = bottomTemp > 90;
-    const candidates = CATALOG.cables.filter(c => c.maxTemp >= (isHot ? 130 : 90));
-    if (candidates.length === 0) return null;
-    const tempDerating = isHot ? Math.max(0.6, 1 - (bottomTemp - 90) * 0.008) : 1.0;
-    const requiredCurrent = motorCurrent / tempDerating;
-    let best = null;
-    for (let c of candidates.sort((a,b) => a.section - b.section)) {
-        if (c.current >= requiredCurrent) {
-            best = c;
-            break;
-        }
-    }
-    if (!best) best = candidates.reduce((prev, curr) => prev.current > curr.current ? prev : curr);
-    return { cable: best, note: isHot ? 'с термовставкой' : '' };
-}
+    if (dragging) {
+      let q = data.xToQ(mx);
+      if (q < data.pCorr.qmin) q = data.pCorr.qmin;
+      if (q > data.pCorr.qmax) q = data.pCorr.qmax;
+      data.targetX = data.qToX(q);
+      data.targetY = data.valToY(data.getY(q));
+      data.Q50target = q;
 
-function calculateCableLoss(current, length, section, temperature, rho = 0.0175) {
-    const Kt = 1 + 0.0043 * (temperature - 20);
-    const resistance = rho * (length / section) * Kt;
-    return Math.sqrt(3) * current * resistance;
-}
-
-function selectTransformerAndTap(motorVoltage, motorCurrent, cableLoss) {
-    const requiredVoltage = motorVoltage + cableLoss;
-    let best = null;
-    for (let t of TMPN_CATALOG) {
-        if (t.voltageNN >= requiredVoltage && t.currentNN >= motorCurrent) {
-            if (!best || t.power < best.power) best = t;
-        }
-    }
-    if (!best) best = TMPN_CATALOG[TMPN_CATALOG.length-1];
-    const tapNumber = Math.round(requiredVoltage / best.stepVoltage);
-    const actualVoltage = Math.min(best.voltageNN, tapNumber * best.stepVoltage);
-    return {
-        transformer: best,
-        requiredVoltage: Math.round(requiredVoltage),
-        tap: tapNumber,
-        actualVoltage: Math.round(actualVoltage)
-    };
-}
-
-function formatPumpName(rawModel, actualHead) {
-    let base = rawModel.replace(/^Х\d+/, '').replace(/\s+/g, '');
-    return `${base}-${actualHead}`;
-}
-
-// ==================== ГЛАВНАЯ ФУНКЦИЯ ====================
-function calculateESP() {
-    let flowRate = parseFloat(document.getElementById('flowRate').value) || 125;
-    let totalHead = parseFloat(document.getElementById('totalHead').value) || 2919;
-    const casingDiam = parseInt(document.getElementById('casingDiameter').value);
-    const fluidDensity = parseFloat(document.getElementById('fluidDensity').value) || 960;
-    const bottomTemp = parseFloat(document.getElementById('bottomTemp').value) || 85;
-    const waterCut = parseFloat(document.getElementById('waterCut').value) || 65;
-    const pumpDepth = parseFloat(document.getElementById('pumpDepth').value) || 2600;
-    const wellheadPressure = parseFloat(document.getElementById('wellheadPressure').value) || 30;
-    const intakePressure = parseFloat(document.getElementById('intakePressure').value) || 0;
-    const frequency = parseFloat(document.getElementById('frequency').value) || 50;
-    const calcAuto = document.getElementById('calcHeadAuto').checked;
-    const manualModel = document.getElementById('selectedPumpModel').value;
-
-    if (calcAuto && pumpDepth > 0) {
-        totalHead = calculateHeadFromDepth(pumpDepth, fluidDensity, wellheadPressure, intakePressure);
-        document.getElementById('totalHead').value = totalHead;
-    }
-
-    // Получаем список подходящих насосов
-    const suitablePumps = findAllSuitablePumps(flowRate, casingDiam);
-    if (suitablePumps.length === 0) { alert('Не найдено подходящих насосов. Проверьте диаметр колонны и дебит.'); return; }
-
-    // Определяем выбранный насос: ручной выбор или автоматически первый
-    let pump;
-    if (manualModel) {
-        pump = suitablePumps.find(p => p.model === manualModel) || suitablePumps[0];
+      drawPumpGraph(canvas, data.pCorr, q, data.H50target, data.k, data.mode, tooltip);
+      updateTooltip(tooltip, q, data, rect);
+      tooltip.classList.add('visible');
     } else {
-        pump = suitablePumps[0];
+      if (mx < 0 || mx > data.pw || my < 0 || my > data.ph) {
+        tooltip.classList.remove('visible');
+        canvas.style.cursor = 'default';
+        return;
+      }
+      const q = data.xToQ(mx);
+      if (q < data.pCorr.qmin || q > data.pCorr.qmax) {
+        tooltip.classList.remove('visible');
+        canvas.style.cursor = 'default';
+        return;
+      }
+      updateTooltip(tooltip, q, data, rect);
+      tooltip.classList.add('visible');
+
+      const dx = mx - data.targetX;
+      const dy = my - data.targetY;
+      canvas.style.cursor = (Math.sqrt(dx*dx + dy*dy) < 10) ? 'grab' : 'default';
     }
+  });
 
-    const headPerStageAdj = pump.headStage * (1 - (fluidDensity - 1000) / 1000 * 0.15) * (frequency/50)**2;
-    let stagesNeeded = Math.ceil(totalHead / headPerStageAdj);
-    let stagesWarning = '';
-    if (stagesNeeded > pump.maxStages) {
-        stagesWarning = `Требуется ${stagesNeeded} ступеней, максимум одной секции — ${pump.maxStages}. Потребуется несколько секций или другой насос.`;
+  window.addEventListener('mouseup', () => {
+    if (dragging) {
+      dragging = false;
+      canvas.style.cursor = 'default';
     }
-    const actualHead = Math.round(stagesNeeded * headPerStageAdj);
-    const sections = Math.ceil(stagesNeeded / pump.stagesPerSection);
+  });
 
-    const Q_m3s = flowRate / 86400;
-    const shaftPowerKW = (Q_m3s * totalHead * fluidDensity * 9.81) / (pump.eff * 1000) * (frequency/50)**3;
-    let powerWarning = '';
-    if (shaftPowerKW > pump.maxShaftPower) {
-        powerWarning = `⚠️ Мощность на валу (${Math.round(shaftPowerKW)} кВт) превышает допустимую для данного насоса (${pump.maxShaftPower} кВт). Требуется усиленный вал или другой насос.`;
-    }
-    const shaftPowerWithMargin = shaftPowerKW * 1.15;
-
-    const motor = findMotor(shaftPowerWithMargin, casingDiam);
-    const motorLoadPercent = motor ? Math.round(shaftPowerKW / motor.power * 100) : 0;
-
-    const cableData = selectCable(motor ? motor.current : 0, bottomTemp);
-    const cable = cableData ? cableData.cable : null;
-    const cableNote = cableData ? cableData.note : '';
-
-    const cableLength = pumpDepth + 100;
-    const cableLoss = cable ? calculateCableLoss(motor.current, cableLength, cable.section, bottomTemp) : 0;
-
-    const motorKVA = motor ? (motor.voltage * motor.current * Math.sqrt(3)) / 1000 : 0;
-    const transformerData = selectTransformerAndTap(motor.voltage, motor.current, cableLoss);
-    const transformer = transformerData.transformer;
-
-    const pumpLength = +(stagesNeeded * 0.035).toFixed(1);
-    const totalLength = motor ? +(pumpLength + motor.length + 1.8).toFixed(1) : pumpLength;
-    const pumpWeight = Math.round(stagesNeeded * pump.weightStage);
-    const totalWeight = motor ? pumpWeight + motor.weight + 120 : pumpWeight + 120;
-    const protector = CATALOG.protectors[motor ? motor.diam : 117] || {model:'2ПА103Д', load:'—'};
-
-    const formattedPump = formatPumpName(pump.model, actualHead);
-
-    // Строим таблицу альтернативных насосов с расчетом ступеней/секций
-    let altRows = '';
-    suitablePumps.forEach(p => {
-        const hStageAdj = p.headStage * (1 - (fluidDensity - 1000) / 1000 * 0.15) * (frequency/50)**2;
-        let st = Math.ceil(totalHead / hStageAdj);
-        const sec = Math.ceil(st / p.stagesPerSection);
-        const isSelected = (p.model === pump.model);
-        altRows += `<tr style="${isSelected ? 'background:#e8f2fd;font-weight:600;' : ''}">
-            <td>${p.model.replace(/^Х\d+/,'').replace(/\s+/g,'')}</td>
-            <td>${p.qNom}</td>
-            <td>${Math.round(p.eff*100)}%</td>
-            <td>${st}</td>
-            <td>${sec}</td>
-            <td><button class="btn btn-sm" style="padding:2px 12px;font-size:12px;" onclick="document.getElementById('selectedPumpModel').value='${p.model}'; calculateESP();">Выбрать</button></td>
-        </tr>`;
-    });
-
-    const container = document.getElementById('resultsContainer');
-    container.classList.add('visible');
-    const flowInRange = flowRate >= pump.qMin && flowRate <= pump.qMax;
-    const rangeNote = flowInRange ? '' : `<div class="note warning"><span>⚠️</span><span>Дебит <strong>${flowRate} м³/сут</strong> вне оптимального диапазона насоса (${pump.qMin}–${pump.qMax}).</span></div>`;
-    const stagesNote = stagesWarning ? `<div class="note warning"><span>⚠️</span><span>${stagesWarning}</span></div>` : '';
-    const powerNote = powerWarning ? `<div class="note warning"><span>⚠️</span><span>${powerWarning}</span></div>` : '';
-    const motorLoadNote = (motorLoadPercent < 70 || motorLoadPercent > 90) ? 
-        `<div class="note warning"><span>⚠️</span><span>Загрузка двигателя ${motorLoadPercent}% (рекомендуется 70–90%).</span></div>` : '';
-
-    container.innerHTML = `
-        <div class="result-summary">
-            <div class="result-pump-icon">⚙️</div>
-            <div class="result-main">
-                <div class="pump-name">${formattedPump}</div>
-                <div class="pump-desc">Габарит ${pump.series}, Ø${pump.diam} мм, номинал ${pump.qNom} м³/сут</div>
-                ${actualHead !== totalHead ? `<div style="margin-top:6px; font-size:13px; color:var(--warning);">⚠️ Требуемый напор ${totalHead} м → достигнут ${actualHead} м</div>` : ''}
-            </div>
-            <div class="result-stats">
-                <div class="result-stat"><div class="value">${actualHead} м</div><div class="label">Напор</div></div>
-                <div class="result-stat"><div class="value">${Math.round(shaftPowerKW)} кВт</div><div class="label">на валу</div></div>
-                <div class="result-stat"><div class="value">${sections} секц.</div><div class="label">секций</div></div>
-            </div>
-        </div>
-        ${rangeNote}${stagesNote}${powerNote}
-        <div class="equipment-row">
-            <div class="eq-card"><div class="eq-title">🎯 Насос</div><div class="eq-model">${formattedPump}</div><div class="eq-specs"><span>Ступеней: <strong>${stagesNeeded}</strong></span><span>Секций: <strong>${sections}</strong></span><span>Напор/ступ: <strong>${headPerStageAdj.toFixed(1)} м</strong></span><span>Длина: ~${pumpLength} м</span><span>Вес: ~${pumpWeight} кг</span></div></div>
-            <div class="eq-card"><div class="eq-title">🔌 Двигатель</div><div class="eq-model">${motor ? motor.model : '—'}</div><div class="eq-specs"><span>Мощность: <strong>${motor?motor.power:'—'} кВт</strong></span><span>U: ${motor?motor.voltage:'—'} В</span><span>I: ${motor?motor.current:'—'} А</span><span>Длина: ${motor?motor.length:'—'} м</span></div>${motorLoadNote}</div>
-        </div>
-        <div class="equipment-row">
-            <div class="eq-card"><div class="eq-title">🔗 Кабель</div><div class="eq-model">${cable ? cable.model : '—'} ${cableNote ? `<span style="font-size:0.8em;color:var(--warning);">(${cableNote})</span>` : ''}</div><div class="eq-specs"><span>Сечение: <strong>${cable?cable.section:'—'} мм²</strong></span><span>Доп. ток: ${cable?cable.current:'—'} А</span><span>Потери: ~${Math.round(cableLoss)} В</span></div></div>
-            <div class="eq-card"><div class="eq-title">⚡ Трансформатор и отпайка</div><div class="eq-model">${transformer.type}</div><div class="eq-specs"><span>Мощность: <strong>${transformer.power} кВА</strong></span><span>U₂ ном: ${transformer.voltageNN} В</span><span>Требуемое U₂: ${transformerData.requiredVoltage} В</span><span>Отпайка: ступень <strong>${transformerData.tap}</strong> (≈${transformerData.actualVoltage} В)</span></div></div>
-        </div>
-        <div class="equipment-row single">
-            <div class="eq-card"><div class="eq-title">🛡️ Гидрозащита</div><div class="eq-model">${protector.model}</div><div class="eq-specs"><span>Нагрузка на пяту: <strong>${protector.load} кг</strong></span><span>Объём масла: ~${protector.oil} л</span></div></div>
-        </div>
-        <div class="equipment-row single">
-            <div class="eq-card"><div class="eq-title">📊 Сводка</div><div class="eq-specs"><span>Общая длина: <strong>~${totalLength} м</strong></span><span>Общий вес: <strong>~${totalWeight} кг</strong></span><span>Температура: <strong>${bottomTemp}°C</strong></span><span>Обводнённость: <strong>${waterCut}%</strong></span><span>Частота: <strong>${frequency} Гц</strong></span></div></div>
-        </div>
-        <div class="card" style="margin-top:16px;">
-            <div class="card-header"><h2>🔄 Другие подходящие насосы</h2></div>
-            <table class="alt-table">
-                <thead><tr><th>Модель</th><th>Q ном.</th><th>КПД</th><th>Ступеней</th><th>Секций</th><th></th></tr></thead>
-                <tbody>${altRows}</tbody>
-            </table>
-        </div>
-        <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;" class="no-print">
-            <button class="btn btn-primary btn-sm" onclick="window.print()">🖨️ Печать</button>
-            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('resultsContainer').classList.remove('visible');window.scrollTo({top:0,behavior:'smooth'});">↩ Новый расчёт</button>
-        </div>
-    `;
-    setTimeout(() => container.scrollIntoView({behavior:'smooth',block:'start'}), 100);
+  canvas.addEventListener('mouseleave', () => {
+    if (canvas._drawData?.tooltipDiv) canvas._drawData.tooltipDiv.classList.remove('visible');
+    canvas.style.cursor = 'default';
+  });
 }
 
-// Автопересчёт напора и сброс ручного выбора насоса при изменении полей
-document.addEventListener('DOMContentLoaded', () => {
-    const auto = document.getElementById('calcHeadAuto');
-    const depth = document.getElementById('pumpDepth');
-    const pressure = document.getElementById('wellheadPressure');
-    const intakePressure = document.getElementById('intakePressure');
-    const density = document.getElementById('fluidDensity');
-    const head = document.getElementById('totalHead');
-    const flowRate = document.getElementById('flowRate');
-    const casingDiameter = document.getElementById('casingDiameter');
-    const frequency = document.getElementById('frequency');
-    const selectedPump = document.getElementById('selectedPumpModel');
+function updateTooltip(div, q, data, rect) {
+  const H = data.curves.head.at(q);
+  const eff = data.curves.eff.at(q) * 100;
+  const N = data.curves.power.at(q);
+  div.innerHTML = `Q: ${q.toFixed(1)} м³/сут<br>H: ${H.toFixed(1)} м<br>N: ${N.toFixed(1)} кВт<br>КПД: ${eff.toFixed(1)}%`;
+  const left = Math.min(data.qToX(q) + data.pad.left + 15, rect.width - 150);
+  const top = Math.min(data.valToY(H) + data.pad.top - 30, rect.height - 60);
+  div.style.left = left + 'px';
+  div.style.top = top + 'px';
+}
 
-    function update() {
-        if (auto.checked) {
-            head.value = calculateHeadFromDepth(
-                parseFloat(depth.value)||0, 
-                parseFloat(density.value)||1000, 
-                parseFloat(pressure.value)||0,
-                parseFloat(intakePressure.value)||0
-            );
-            head.style.background='#f8fbff';
-        } else { head.style.background='#fafafa'; }
-    }
+// Функция экспорта графика в PNG
+function exportGraphToPNG(canvas, pumpName) {
+  const link = document.createElement('a');
+  link.download = `${pumpName.replace(/\s+/g, '_')}_graph.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
 
-    // При изменении любых параметров сбрасываем ручной выбор насоса
-    function resetPumpSelection() {
-        if (selectedPump.value) {
-            selectedPump.value = '';
-        }
-    }
+// ═══════════════════════════════════════════
+// ГЛАВНАЯ ФУНКЦИЯ ПОДБОРА
+// ═══════════════════════════════════════════
+function selectESP() {
+  const Q = v('s_q');
+  const cas = vc('s_cas');
+  const rho = v('s_rho') || 900;
+  const F = v('s_freq') || 50;
+  const exec = vc('s_exec');
+  const temp = v('s_temp') || 80;
+  const viscInput = v('s_visc');
+  const visc = viscInput || estimateViscosity(temp, rho);
+  const gor = v('s_gor') || 0;
 
-    auto.addEventListener('change', update);
-    depth.addEventListener('input', () => { resetPumpSelection(); update(); });
-    pressure.addEventListener('input', () => { resetPumpSelection(); update(); });
-    intakePressure.addEventListener('input', () => { resetPumpSelection(); update(); });
-    density.addEventListener('input', () => { resetPumpSelection(); update(); });
-    flowRate.addEventListener('input', resetPumpSelection);
-    casingDiameter.addEventListener('change', resetPumpSelection);
-    frequency.addEventListener('input', resetPumpSelection);
-    
-    update();
-    document.addEventListener('keydown', e => { if (e.key==='Enter' && e.target.tagName==='INPUT') { e.preventDefault(); calculateESP(); } });
+  let H = v('s_h');
+  if (document.getElementById('auto_h').checked) H = calcH();
+  if (Q <= 0 || H <= 0) { alert('Задайте дебит и напор'); return; }
+
+  const k = F / 50;
+  const rhoK = rho / 1000;
+  const Q50 = Q / k;
+  const H50 = H / (k * k);
+  const allowedGab = CAS_MAP[cas] || ['5A'];
+
+  const PUMPS = CATALOG.pumps;
+
+  const matched = PUMPS
+    .filter(p => {
+      if (!allowedGab.includes(p.gab)) return false;
+      if (exec === 'pkm'      && p.mat !== 'ПКМ')      return false;
+      if (exec === 'niresist' && p.mat !== 'нирезист') return false;
+      if (Q50 < p.qmin * 0.75 || Q50 > p.qmax * 1.25) return false;
+      const viscCorr = correctForViscosity(p.q50, p.h_sec, p.eff, visc);
+      const nSec = Math.ceil(H50 / viscCorr.H);
+      if (nSec > 20 || nSec < 1) return false;
+      return true;
+    })
+    .map(p => {
+      const viscCorr = correctForViscosity(p.q50, p.h_sec, p.eff, visc);
+      // Создаём скорректированный объект насоса для расчётов и графиков
+      const pCorr = {
+        ...p,
+        qmin: p.qmin * k * viscCorr.Q / p.q50,
+        qmax: p.qmax * k * viscCorr.Q / p.q50,
+        q50: p.q50 * k * viscCorr.Q / p.q50,
+        h_sec: viscCorr.H,
+        eff: viscCorr.eff,
+        n100: p.n100,
+        maxPwrDir: p.maxPwrDir,
+        maxPwrSoft: p.maxPwrSoft
+      };
+      const nSec = Math.ceil(H50 / pCorr.h_sec);
+      const Qreal = pCorr.q50;
+      const Hreal = pCorr.h_sec * nSec;
+      const Npump = pCorr.n100 * nSec * k*k*k * rhoK;
+      const maxPwr = (F === 50) ? p.maxPwrDir : p.maxPwrSoft;
+      const powerExceeded = Npump > maxPwr;
+      const motor = pickMotor(Npump, p.gab, F, powerExceeded ? 'впэд' : undefined);
+      const hydro = pickHydro(Npump, p.gab);
+      const gasSep = pickGasSep(gor, Qreal, p.gab);
+      const score = Math.min(100, Math.round(
+        (Q50 >= p.qmin && Q50 <= p.qmax ? 60 : 20) +
+        (30 * (1 - Math.abs(Q50 - p.q50)/p.q50))
+      ));
+      return { p: pCorr, pOrig: p, nSec, Qreal, Hreal, Npump, maxPwr, powerExceeded, motor, hydro, gasSep, score, viscCorr };
+    })
+    .sort((a,b) => b.score - a.score)
+    .slice(0, 8);
+
+  document.getElementById('empty_state').style.display = 'none';
+  document.getElementById('results_content').style.display = 'block';
+  document.getElementById('res_title').textContent = matched.length
+    ? `Найдено ${matched.length} вариантов`
+    : 'Нет подходящих насосов';
+  document.getElementById('res_desc').textContent =
+    `Q=${Q.toFixed(0)} м³/сут · H=${H.toFixed(0)} м · колонна ${cas} · F=${F} Гц · ρ=${rho} кг/м³ · μ≈${visc.toFixed(1)} сП`;
+
+  document.getElementById('summary_strip').innerHTML = `
+    <div class="sc"><div class="sc-label">Дебит</div><div class="sc-val">${Q.toFixed(0)}<span class="sc-unit"> м³/сут</span></div></div>
+    <div class="sc"><div class="sc-label">Напор</div><div class="sc-val">${H.toFixed(0)}<span class="sc-unit"> м</span></div></div>
+    <div class="sc"><div class="sc-label">Колонна</div><div class="sc-val">${cas}</div></div>
+    <div class="sc"><div class="sc-label">Частота</div><div class="sc-val">${F}<span class="sc-unit"> Гц</span></div></div>
+    <div class="sc"><div class="sc-label">Плотность</div><div class="sc-val">${rho}<span class="sc-unit"> кг/м³</span></div></div>
+    <div class="sc"><div class="sc-label">Вязкость</div><div class="sc-val">${visc.toFixed(1)}<span class="sc-unit"> сП</span></div></div>
+    <div class="sc"><div class="sc-label">Температура</div><div class="sc-val">${temp}<span class="sc-unit"> °C</span></div></div>
+  `;
+
+  const list = document.getElementById('pump_list');
+  if (!matched.length) { list.innerHTML = ''; return; }
+
+  list.innerHTML = matched.map((m, idx) => {
+    const p = m.p, pOrig = m.pOrig;
+    const isBest = idx === 0;
+    const qInZone = Q >= p.qmin && Q <= p.qmax;
+    const hOk = m.Hreal >= H * 0.95;
+    const powerCls = m.powerExceeded ? 'bad' : 'ok';
+    const matBadge = pOrig.mat === 'ПКМ' ? '<span class="badge info">Колёса ПКМ</span>' : '<span class="badge gray">Нирезист</span>';
+    const motorHtml = m.motor
+      ? `<span class="badge ok">${m.motor.name}</span><span class="badge gray">${m.motor.power} кВт · Ø${m.motor.diam} мм</span>`
+      : '<span class="badge warn">ПЭД не найден</span>';
+    const hydroHtml = m.hydro
+      ? `<span class="badge info">${m.hydro.name}</span><span class="badge gray">пята ${m.hydro.axial_kg} кг · масло ${m.hydro.oil} л</span>`
+      : '<span class="badge warn">—</span>';
+    const gasHtml = m.gasSep ? `<span class="badge info">ГС: ${m.gasSep.name}</span>` : '';
+
+    return `<div class="pump-card${isBest ? ' best' : ''}">
+      <div class="pc-head">
+        <div>
+          <div class="pc-title">${pOrig.name}${pOrig.type ? ` (${pOrig.type})` : ''}</div>
+          <div class="pc-sub">Габарит ${pOrig.gab} · Ø${pOrig.diam} мм · скважина ≥${pOrig.minCol} мм</div>
+        </div>
+        <div class="pc-score"><div class="pc-score-val">${m.score}</div><div class="pc-score-label">совпадение</div></div>
+      </div>
+      <div class="match-bar"><div class="match-fill" style="width:${m.score}%"></div></div>
+      <div class="pc-body">
+        <div class="pc-stat"><div class="pcs-label">Подача (${F} Гц)</div><div class="pcs-val ${qInZone?'ok':'warn'}">${m.Qreal.toFixed(0)} м³/сут</div></div>
+        <div class="pc-stat"><div class="pcs-label">Рабочая зона Q</div><div class="pcs-val">${(p.qmin).toFixed(0)}–${(p.qmax).toFixed(0)} м³/сут</div></div>
+        <div class="pc-stat"><div class="pcs-label">Секций</div><div class="pcs-val ok">${m.nSec} секц.</div></div>
+        <div class="pc-stat"><div class="pcs-label">Итоговый напор</div><div class="pcs-val ${hOk?'ok':'bad'}">${m.Hreal.toFixed(0)} м</div></div>
+        <div class="pc-stat"><div class="pcs-label">Мощность насоса</div><div class="pcs-val ${powerCls}">${m.Npump.toFixed(1)} кВт${m.powerExceeded ? ' ⚠️' : ''}</div></div>
+        <div class="pc-stat"><div class="pcs-label">КПД ступени</div><div class="pcs-val">${p.eff.toFixed(1)}%</div></div>
+      </div>
+      <div class="graph-tabs" data-idx="${idx}">
+        <div class="graph-tab active" data-mode="head">Напор</div>
+        <div class="graph-tab" data-mode="power">Мощность</div>
+        <div class="graph-tab" data-mode="eff">КПД</div>
+      </div>
+      <div class="graph-container" style="position:relative;">
+        <canvas id="graph_${idx}"></canvas>
+        <div class="graph-tooltip" id="tooltip_${idx}"></div>
+        <button class="graph-export-btn" title="Сохранить график как PNG" onclick="event.stopPropagation(); exportGraphToPNG(document.getElementById('graph_${idx}'), '${pOrig.name.replace(/'/g, "\\'")}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
+      </div>
+      <div class="pc-footer">
+        ${qInZone && hOk ? '<span class="badge ok">Подходит</span>' : '<span class="badge warn">На границе зоны</span>'}
+        ${matBadge}
+        ${F !== 50 ? `<span class="badge info">ЧРП ${F} Гц</span>` : ''}
+        ${gasHtml}
+        <span style="font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;">ПЭД</span> ${motorHtml}
+        <span style="font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;">Гидрозащита</span> ${hydroHtml}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Активация вкладок графиков
+  document.querySelectorAll('.graph-tabs').forEach(tabs => {
+    const idx = tabs.dataset.idx;
+    const canvas = document.getElementById(`graph_${idx}`);
+    const tooltip = document.getElementById(`tooltip_${idx}`);
+    const tabsArr = tabs.querySelectorAll('.graph-tab');
+    tabsArr.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabsArr.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const mode = tab.dataset.mode;
+        const m = matched[parseInt(idx)];
+        drawPumpGraph(canvas, m.p, Q50, H50, k, mode, tooltip);
+      });
+    });
+    const activeTab = tabs.querySelector('.graph-tab.active');
+    const mode = activeTab ? activeTab.dataset.mode : 'head';
+    const m = matched[parseInt(idx)];
+    drawPumpGraph(canvas, m.p, Q50, H50, k, mode, tooltip);
+  });
+}
+
+// Слушатели для автоподбора вязкости
+document.getElementById('s_temp').addEventListener('input', () => {
+  const viscField = document.getElementById('s_visc');
+  if (!viscField.value) {
+    const est = estimateViscosity(v('s_temp')||80, v('s_rho')||900);
+    document.getElementById('visc_hint').textContent = `Оставьте пустым — будет ≈${est} сП`;
+  }
+});
+document.getElementById('s_rho').addEventListener('input', () => {
+  const viscField = document.getElementById('s_visc');
+  if (!viscField.value) {
+    const est = estimateViscosity(v('s_temp')||80, v('s_rho')||900);
+    document.getElementById('visc_hint').textContent = `Оставьте пустым — будет ≈${est} сП`;
+  }
 });
 </script>
 </body>
