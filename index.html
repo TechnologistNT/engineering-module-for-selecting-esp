@@ -1,1162 +1,884 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ESP Selector · Подбор УЭЦН НТ (встроенный каталог)</title>
-<style>
-/* ... весь CSS остается без изменений ... */
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#f5f5f7;--surface:#fff;--surface2:#f2f2f2;
-  --border:rgba(0,0,0,0.08);--text-1:#1d1d1f;--text-2:#6e6e73;--text-3:#aeaeb2;
-  --accent:#0071e3;--accent-h:#0077ed;--accent-soft:rgba(0,113,227,0.10);
-  --green:#34c759;--orange:#ff9500;--red:#ff3b30;--purple:#af52de;
-  --radius:16px;--radius-sm:10px;
-  --shadow:0 2px 20px rgba(0,0,0,0.06),0 1px 4px rgba(0,0,0,0.04);
-  --shadow-lg:0 8px 40px rgba(0,0,0,0.12);
-  --nav-h:56px;--tr:0.18s cubic-bezier(.4,0,.2,1);
-  --font:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',sans-serif;
-  --mono:'SF Mono','Fira Code',ui-monospace,monospace;
-}
-body{font-family:var(--font);background:var(--bg);color:var(--text-1);-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column;}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+  <title>ESP Selector · Подбор УЭЦН НТ (v8.6.1)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f5f5f7; --surface: #fff; --surface2: #f2f2f2;
+      --border: rgba(0,0,0,0.08); --text-1: #1d1d1f; --text-2: #6e6e73; --text-3: #aeaeb2;
+      --accent: #0071e3; --accent-h: #0077ed; --accent-soft: rgba(0,113,227,0.10);
+      --green: #34c759; --orange: #ff9500; --red: #ff3b30; --purple: #af52de;
+      --radius: 16px; --radius-sm: 10px;
+      --shadow: 0 2px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04);
+      --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+      --nav-h: 56px; --tr: 0.18s cubic-bezier(.4,0,.2,1);
+      --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+      --mono: 'SF Mono', 'Fira Code', ui-monospace, monospace;
+    }
+    body.dark {
+      --bg: #1c1c1e; --surface: #2c2c2e; --surface2: #3a3a3c;
+      --border: rgba(255,255,255,0.1); --text-1: #f5f5f7; --text-2: #aeaeb2; --text-3: #636366;
+      --accent: #0a84ff; --accent-h: #409cff; --accent-soft: rgba(10,132,255,0.18);
+      --green: #30d158; --orange: #ff9f0a; --red: #ff453a; --purple: #bf5af2;
+      --shadow: 0 2px 20px rgba(0,0,0,0.4);
+    }
+    body { font-family: var(--font); background: var(--bg); color: var(--text-1); -webkit-font-smoothing: antialiased; min-height: 100vh; display: flex; flex-direction: column; }
+    nav { position: sticky; top: 0; z-index: 100; height: var(--nav-h); background: rgba(255,255,255,0.82); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
+    body.dark nav { background: rgba(44,44,46,0.82); }
+    .nav-logo { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; } .nav-logo svg { color: var(--accent); }
+    .nav-tag { font-size: 11px; font-weight: 500; color: var(--text-3); padding: 3px 9px; background: var(--surface2); border-radius: 20px; }
+    .nav-actions { display: flex; align-items: center; gap: 8px; }
+    .theme-toggle { background: none; border: none; cursor: pointer; font-size: 18px; color: var(--text-2); }
+    .layout { display: grid; grid-template-columns: 340px 1fr; gap: 0; flex: 1; } @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+    .sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 20px 18px; position: sticky; top: var(--nav-h); height: calc(100vh - var(--nav-h)); overflow-y: auto; } @media (max-width: 860px) { .sidebar { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); } }
+    .sidebar-title { font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--text-2); margin-bottom: 12px; }
+    .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; position: relative; }
+    .field label { font-size: 11px; font-weight: 600; color: var(--text-2); display: flex; align-items: center; gap: 4px; }
+    .hint { font-size: 11px; color: var(--text-3); }
+    .iw { position: relative; } .iw .unit { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font: 500 12px var(--mono); color: var(--text-3); pointer-events: none; }
+    input[type=number], select { width: 100%; height: 38px; padding: 0 10px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text-1); font: 14px var(--font); outline: none; -webkit-appearance: none; transition: border-color var(--tr), box-shadow var(--tr); }
+    input.has-unit { padding-right: 44px; } input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); background: var(--surface); }
+    select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236e6e73' stroke-width='1.5' fill='none'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; cursor: pointer; }
+    .field .validation-msg { font-size: 11px; color: var(--orange); margin-top: 2px; }
+    .field .validation-msg.error { color: var(--red); }
+    .tooltip-trigger { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: var(--surface2); color: var(--text-2); font-size: 11px; font-weight: 700; cursor: help; margin-left: 4px; }
+    .field .field-tooltip { display: none; position: absolute; left: 0; bottom: 100%; margin-bottom: 6px; background: rgba(29,29,31,0.95); backdrop-filter: blur(12px); color: #fff; padding: 6px 10px; border-radius: 8px; font-size: 11px; line-height: 1.4; white-space: normal; width: 240px; z-index: 10; pointer-events: none; word-wrap: break-word; }
+    .field:hover .field-tooltip { display: block; }
 
-nav{position:sticky;top:0;z-index:100;height:var(--nav-h);
-  background:rgba(255,255,255,0.82);backdrop-filter:saturate(180%) blur(20px);
-  -webkit-backdrop-filter:saturate(180%) blur(20px);
-  border-bottom:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;padding:0 24px;}
-.nav-logo{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;}
-.nav-logo svg{color:var(--accent);}
-.nav-tag{font-size:11px;font-weight:500;color:var(--text-3);padding:3px 9px;
-  background:var(--surface2);border-radius:20px;}
-
-.layout{display:grid;grid-template-columns:320px 1fr;gap:0;flex:1;}
-@media(max-width:860px){.layout{grid-template-columns:1fr;}}
-
-.sidebar{background:var(--surface);border-right:1px solid var(--border);
-  padding:24px 20px;position:sticky;top:var(--nav-h);
-  height:calc(100vh - var(--nav-h));overflow-y:auto;}
-@media(max-width:860px){.sidebar{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border);}}
-
-.sidebar-title{font-size:11px;font-weight:700;letter-spacing:.07em;
-  text-transform:uppercase;color:var(--text-2);margin-bottom:16px;}
-
-.field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
-.field label{font-size:11px;font-weight:600;color:var(--text-2);}
-.hint{font-size:11px;color:var(--text-3);}
-.iw{position:relative;}
-.iw .unit{position:absolute;right:10px;top:50%;transform:translateY(-50%);
-  font:500 12px var(--mono);color:var(--text-3);pointer-events:none;}
-input[type=number],select{
-  width:100%;height:40px;padding:0 10px;
-  border:1.5px solid var(--border);border-radius:var(--radius-sm);
-  background:var(--bg);color:var(--text-1);font:15px var(--font);
-  outline:none;-webkit-appearance:none;
-  transition:border-color var(--tr),box-shadow var(--tr);}
-input.has-unit{padding-right:44px;}
-input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);background:#fff;}
-select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236e6e73' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 10px center;padding-right:30px;cursor:pointer;}
-
-.toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
-.tl{font-size:12px;font-weight:500;color:var(--text-1);}
-.toggle{position:relative;width:40px;height:24px;cursor:pointer;flex-shrink:0;}
-.toggle input{opacity:0;width:0;height:0;}
-.slider{position:absolute;inset:0;background:var(--surface2);border-radius:12px;transition:background var(--tr);}
-.slider:before{content:'';position:absolute;width:20px;height:20px;left:2px;bottom:2px;
-  background:#fff;border-radius:50%;box-shadow:0 2px 4px rgba(0,0,0,.2);transition:transform var(--tr);}
-.toggle input:checked+.slider{background:var(--green);}
-.toggle input:checked+.slider:before{transform:translateX(16px);}
-
-.btn-calc{width:100%;height:46px;background:var(--accent);color:#fff;
-  border:none;border-radius:var(--radius-sm);cursor:pointer;
-  font:600 15px var(--font);transition:all var(--tr);margin-top:4px;letter-spacing:.01em;}
-.btn-calc:hover{background:var(--accent-h);transform:translateY(-1px);
-  box-shadow:0 4px 16px rgba(0,113,227,.35);}
-.btn-calc:active{transform:translateY(0);}
-
-.divider{height:1px;background:var(--border);margin:16px 0;}
-
-.results-pane{padding:24px;overflow-y:auto;}
-
-.page-header{margin-bottom:24px;}
-.eyebrow{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
-  color:var(--accent);margin-bottom:5px;}
-.page-title{font-size:26px;font-weight:700;}
-.page-desc{font-size:14px;color:var(--text-2);margin-top:4px;}
-
-.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
-  min-height:400px;gap:12px;text-align:center;}
-.empty svg{color:var(--text-3);}
-.empty h3{font-size:17px;font-weight:600;color:var(--text-2);}
-.empty p{font-size:14px;color:var(--text-3);max-width:280px;}
-
-.summary-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
-  gap:10px;margin-bottom:20px;}
-.sc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);
-  box-shadow:var(--shadow);padding:14px 14px 12px;}
-.sc-label{font-size:11px;font-weight:600;color:var(--text-2);text-transform:uppercase;
-  letter-spacing:.04em;margin-bottom:4px;}
-.sc-val{font:700 18px var(--mono);color:var(--accent);}
-.sc-unit{font-size:11px;color:var(--text-3);}
-
-.pump-list{display:flex;flex-direction:column;gap:12px;}
-.pump-card{background:var(--surface);border:1.5px solid var(--border);
-  border-radius:var(--radius);box-shadow:var(--shadow);
-  overflow:hidden;transition:all var(--tr);cursor:pointer;}
-.pump-card:hover{border-color:var(--accent);box-shadow:var(--shadow-lg);transform:translateY(-2px);}
-.pump-card.best{border-color:var(--accent);background:linear-gradient(to bottom right,#fff,rgba(0,113,227,.03));}
-.pump-card.best::before{content:'★ Лучший выбор';display:block;
-  background:var(--accent);color:#fff;font:600 11px var(--font);
-  letter-spacing:.05em;text-transform:uppercase;padding:6px 16px;
-  border-radius:var(--radius) var(--radius) 0 0;}
-
-.pc-head{display:flex;align-items:center;justify-content:space-between;
-  padding:16px 18px;gap:12px;}
-.pc-title{font-size:17px;font-weight:700;color:var(--text-1);}
-.pc-sub{font-size:12px;color:var(--text-2);margin-top:2px;}
-.pc-score{text-align:right;flex-shrink:0;}
-.pc-score-val{font:700 22px var(--mono);color:var(--accent);}
-.pc-score-label{font-size:11px;color:var(--text-3);}
-
-.pc-body{padding:0 18px 16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;}
-.pc-stat{background:var(--surface2);border-radius:8px;padding:10px 12px;}
-.pcs-label{font-size:11px;font-weight:600;color:var(--text-2);margin-bottom:3px;}
-.pcs-val{font:600 15px var(--mono);color:var(--text-1);}
-.pcs-val.ok{color:var(--green);}
-.pcs-val.warn{color:var(--orange);}
-.pcs-val.bad{color:var(--red);}
-
-.pc-footer{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
-  padding:12px 18px;border-top:1px solid var(--border);background:var(--bg);}
-.badge{display:inline-flex;align-items:center;gap:4px;
-  padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;}
-.badge:before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;}
-.badge.ok  {background:rgba(52,199,89,.12);color:#248a3d;}
-.badge.warn{background:rgba(255,149,0,.12);color:#bf5900;}
-.badge.bad {background:rgba(255,59,48,.12);color:#c0392b;}
-.badge.info{background:var(--accent-soft);color:var(--accent);}
-.badge.gray{background:var(--surface2);color:var(--text-2);}
-
-.match-bar{height:4px;background:var(--surface2);border-radius:2px;margin:0 18px 14px;overflow:hidden;}
-.match-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--accent),#5e9eff);transition:width .5s ease;}
-
-/* СТИЛИ ДЛЯ ПЕРЕКЛЮЧАТЕЛЕЙ ГРАФИКОВ И ТУЛТИПА */
-.graph-tabs {
-  display: flex;
-  gap: 6px;
-  margin: 10px 18px 0;
-  align-items: center;
-}
-.graph-tab {
-  flex: 1;
-  padding: 6px 0;
-  text-align: center;
-  font-size: 11px;
-  font-weight: 600;
-  border-radius: 8px;
-  background: var(--surface2);
-  color: var(--text-2);
-  cursor: pointer;
-  transition: all var(--tr);
-  border: 1px solid transparent;
-}
-.graph-tab.active {
-  background: var(--accent-soft);
-  color: var(--accent);
-  border-color: var(--accent);
-}
-.graph-container {
-  margin: 5px 18px 0;
-  background: var(--surface2);
-  border-radius: 12px;
-  padding: 6px;
-  height: 160px;
-  position: relative;
-}
-.graph-container canvas {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-.graph-tooltip {
-  position: absolute;
-  background: rgba(29,29,31,0.92);
-  backdrop-filter: blur(12px);
-  color: #fff;
-  padding: 8px 12px;
-  border-radius: 10px;
-  font-family: var(--mono);
-  font-size: 11px;
-  line-height: 1.5;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s;
-  z-index: 10;
-  white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-}
-.graph-tooltip.visible {
-  opacity: 1;
-}
-
-/* Кнопка экспорта PNG */
-.graph-export-btn {
-  position: absolute;
-  top: 4px;
-  right: 6px;
-  background: rgba(255,255,255,0.85);
-  backdrop-filter: blur(6px);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 4px 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all var(--tr);
-  z-index: 5;
-}
-.graph-export-btn:hover {
-  background: #fff;
-  border-color: var(--accent);
-}
-.graph-export-btn svg {
-  width: 14px;
-  height: 14px;
-  color: var(--text-2);
-}
-.graph-export-btn:hover svg {
-  color: var(--accent);
-}
-
-.results-count{font-size:13px;color:var(--text-2);margin-bottom:16px;}
-
-.warn-banner{display:flex;gap:10px;background:rgba(255,149,0,.10);border:1px solid rgba(255,149,0,.25);
-  border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:16px;}
-
-.footer-bar{display:flex;justify-content:space-between;align-items:center;
-  padding:12px 24px;background:var(--surface);border-top:1px solid var(--border);
-  font-size:12px;color:var(--text-3);font-weight:500;}
-</style>
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; } .tl { font-size: 12px; font-weight: 500; color: var(--text-1); }
+    .toggle { position: relative; width: 40px; height: 24px; cursor: pointer; flex-shrink: 0; } .toggle input { opacity: 0; width: 0; height: 0; } .slider { position: absolute; inset: 0; background: var(--surface2); border-radius: 12px; transition: background var(--tr); } .slider:before { content: ''; position: absolute; width: 20px; height: 20px; left: 2px; bottom: 2px; background: #fff; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,.2); transition: transform var(--tr); } .toggle input:checked+.slider { background: var(--green); } .toggle input:checked+.slider:before { transform: translateX(16px); }
+    .btn-calc { width: 100%; height: 44px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); cursor: pointer; font: 600 15px var(--font); transition: all var(--tr); margin-top: 6px; } .btn-calc:hover { background: var(--accent-h); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,113,227,.35); }
+    .btn-secondary { width: 100%; height: 36px; background: var(--surface2); color: var(--text-1); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; font: 500 13px var(--font); margin-top: 4px; transition: all var(--tr); }
+    .btn-secondary:hover { background: #e8e8ed; }
+    .divider { height: 1px; background: var(--border); margin: 14px 0; }
+    .results-pane { padding: 24px; overflow-y: auto; }
+    .page-header { margin-bottom: 20px; } .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); } .page-title { font-size: 24px; font-weight: 700; } .page-desc { font-size: 14px; color: var(--text-2); }
+    .empty { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; gap: 12px; text-align: center; } .empty svg { color: var(--text-3); } .empty h3 { font-size: 17px; font-weight: 600; color: var(--text-2); } .empty p { font-size: 14px; color: var(--text-3); max-width: 280px; }
+    .summary-strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px,1fr)); gap: 10px; margin-bottom: 20px; } .sc { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow); padding: 14px; } .sc-label { font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; } .sc-val { font: 700 18px var(--mono); color: var(--accent); } .sc-unit { font-size: 11px; color: var(--text-3); }
+    .warn-banner { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: rgba(255,149,0,0.1); border: 1px solid rgba(255,149,0,0.3); border-radius: var(--radius-sm); margin-bottom: 16px; font-size: 14px; color: #bf5900; }
+    .warn-banner svg { flex-shrink: 0; color: var(--orange); }
+    .results-count { font-size: 13px; font-weight: 500; color: var(--text-2); margin-bottom: 12px; }
+    .pump-list { display: flex; flex-direction: column; gap: 12px; }
+    .pump-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; transition: all var(--tr); position: relative; } .pump-card:hover { border-color: var(--accent); box-shadow: var(--shadow-lg); transform: translateY(-2px); } .pump-card.best { border-color: var(--accent); background: linear-gradient(to bottom right,var(--surface),var(--accent-soft)); } .pump-card.best::before { content: '★ Лучший выбор'; display: block; background: var(--accent); color: #fff; font: 600 11px var(--font); letter-spacing: .05em; text-transform: uppercase; padding: 6px 16px; border-radius: var(--radius) var(--radius) 0 0; }
+    .match-bar { height: 4px; background: var(--surface2); margin: 0 18px; border-radius: 2px; overflow: hidden; } .match-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.4s ease; }
+    .pc-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; } .pc-title { font-size: 17px; font-weight: 700; } .pc-sub { font-size: 12px; color: var(--text-2); } .pc-score { text-align: right; } .pc-score-val { font: 700 22px var(--mono); color: var(--accent); } .pc-score-label { font-size: 11px; color: var(--text-3); }
+    .pc-body { padding: 0 18px 14px; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); gap: 8px; } .pc-stat { background: var(--surface2); border-radius: 8px; padding: 10px 12px; } .pcs-label { font-size: 11px; font-weight: 600; color: var(--text-2); } .pcs-val { font: 600 14px var(--mono); color: var(--text-1); } .pcs-val.ok { color: var(--green); } .pcs-val.warn { color: var(--orange); } .pcs-val.bad { color: var(--red); }
+    .pc-footer { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 18px; border-top: 1px solid var(--border); background: var(--bg); } .badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; } .badge:before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; } .badge.ok { background: rgba(52,199,89,.12); color: #248a3d; } .badge.warn { background: rgba(255,149,0,.12); color: #bf5900; } .badge.bad { background: rgba(255,59,48,.12); color: #c0392b; } .badge.info { background: var(--accent-soft); color: var(--accent); } .badge.gray { background: var(--surface2); color: var(--text-2); }
+    .graph-tabs { display: flex; gap: 6px; margin: 8px 18px 0; } .graph-tab { flex: 1; padding: 5px 0; text-align: center; font-size: 11px; font-weight: 600; border-radius: 8px; background: var(--surface2); color: var(--text-2); cursor: pointer; transition: all var(--tr); border: 1px solid transparent; } .graph-tab.active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+    .graph-container { margin: 4px 18px 0; background: var(--surface2); border-radius: 12px; padding: 4px; height: 150px; position: relative; } .graph-container canvas { width: 100%; height: 100%; display: block; } .graph-tooltip { position: absolute; background: rgba(29,29,31,0.92); backdrop-filter: blur(12px); color: #fff; padding: 8px 12px; border-radius: 10px; font-family: var(--mono); font-size: 11px; line-height: 1.5; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 10; white-space: nowrap; } .graph-tooltip.visible { opacity: 1; }
+    .graph-export-btn { position: absolute; top: 4px; right: 6px; background: rgba(255,255,255,0.85); backdrop-filter: blur(6px); border: 1px solid var(--border); border-radius: 6px; padding: 2px 5px; cursor: pointer; z-index: 5; } .graph-export-btn svg { width: 14px; height: 14px; color: var(--text-2); }
+    .footer-bar { display: flex; justify-content: space-between; align-items: center; padding: 12px 24px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-3); background: var(--surface); }
+    .compare-checkbox { position: absolute; top: 10px; right: 10px; transform: scale(1.2); accent-color: var(--accent); z-index: 5; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 200; justify-content: center; align-items: center; }
+    .modal-content { background: var(--surface); border-radius: var(--radius); padding: 24px; max-width: 900px; width: 95%; max-height: 80vh; overflow-y: auto; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; }
+    .modal-close { cursor: pointer; font-size: 24px; }
+    .compare-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    .compare-table th, .compare-table td { padding: 8px; border-bottom: 1px solid var(--border); text-align: left; }
+    .compare-table th { color: var(--text-2); }
+    .print-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+    @media print {
+      .sidebar, nav, .footer-bar, .graph-tabs, .compare-checkbox, .btn-calc, .print-btn { display: none !important; }
+      .layout { display: block; }
+      .results-pane { padding: 0; }
+    }
+  </style>
 </head>
 <body>
-
 <nav>
-  <div class="nav-logo">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
-    </svg>
-    ESP Selector · Подбор погружного оборудования
+  <div class="nav-logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>ESP Selector · Подбор УЭЦН НТ</div>
+  <div class="nav-actions">
+    <span class="nav-tag">Насосы · ПЭД · Кабель · Тепло · Газ</span>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Тёмная тема">🌓</button>
   </div>
-  <span class="nav-tag">Насосы · ПЭД · Гидрозащита</span>
 </nav>
-
 <div class="layout">
   <div class="sidebar">
-    <div class="sidebar-title">Параметры скважины</div>
-    <div class="field">
-      <label>Дебит жидкости, Q</label>
-      <div class="iw"><input type="number" id="s_q" placeholder="0" class="has-unit"><span class="unit">м³/сут</span></div>
-      <span class="hint">По замеру ГЗУ</span>
+    <div style="display:flex; gap:6px; margin-bottom:12px;">
+      <button class="btn-secondary" onclick="saveConfig()">💾 Сохранить</button>
+      <button class="btn-secondary" onclick="loadConfig()">📂 Загрузить</button>
     </div>
-    <div class="field">
-      <label>Требуемый напор, H</label>
-      <div class="iw"><input type="number" id="s_h" placeholder="0" class="has-unit"><span class="unit">м</span></div>
-      <span class="hint">Или рассчитать ниже ↓</span>
-    </div>
-    <div class="field">
-      <label>Диаметр обсадной колонны</label>
-      <select id="s_cas">
-        <option value="2A">102 мм (2А)</option>
-        <option value="3">114 мм (3, 4)</option>
-        <option value="5">140 мм (5)</option>
-        <option value="5A" selected>146 мм (5А)</option>
-        <option value="6">168 мм (6)</option>
-        <option value="7A">178+ мм (7А)</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Плотность жидкости, ρ</label>
-      <div class="iw"><input type="number" id="s_rho" placeholder="900" class="has-unit"><span class="unit">кг/м³</span></div>
-    </div>
-    <div class="field">
-      <label>Вязкость жидкости, μ</label>
-      <div class="iw"><input type="number" id="s_visc" placeholder="" class="has-unit"><span class="unit">сП</span></div>
-      <span class="hint" id="visc_hint">Оставьте пустым — оценим по t и ρ</span>
-    </div>
-    <div class="field">
-      <label>Температура на приёме</label>
-      <div class="iw"><input type="number" id="s_temp" placeholder="80" class="has-unit"><span class="unit">°C</span></div>
-    </div>
-    <div class="field">
-      <label>Обводнённость</label>
-      <div class="iw"><input type="number" id="s_wc" placeholder="0" class="has-unit"><span class="unit">%</span></div>
-    </div>
-    <div class="field">
-      <label>Газовый фактор</label>
-      <div class="iw"><input type="number" id="s_gor" placeholder="0" class="has-unit"><span class="unit">м³/т</span></div>
-      <span class="hint">Для подбора газосепаратора</span>
-    </div>
-
+    <div class="sidebar-title">Основные параметры</div>
+    <div class="field"><label>Дебит жидкости, Q <span class="tooltip-trigger">?</span></label><div class="field-tooltip">Целевой дебит смеси на устье. Основной параметр подбора.</div><div class="iw"><input type="number" id="s_q" placeholder="0" class="has-unit" min="0"><span class="unit">м³/сут</span></div><div class="validation-msg" id="val_s_q"></div></div>
+    <div class="field"><label>Требуемый напор, H <span class="tooltip-trigger">?</span></label><div class="field-tooltip">Полный напор, который должен развивать насос. При включённом авторежиме рассчитывается автоматически.</div><div class="iw"><input type="number" id="s_h" placeholder="0" class="has-unit" min="0"><span class="unit">м</span></div><div class="validation-msg" id="val_s_h"></div></div>
+    <div class="field"><label>Диаметр обсадной колонны <span class="tooltip-trigger">?</span></label><div class="field-tooltip">Внутренний диаметр эксплуатационной колонны. Определяет допустимый габарит насоса.</div><select id="s_cas"><option value="2A">102 мм (2А)</option><option value="3">114 мм (3)</option><option value="5">140 мм (5)</option><option value="5A" selected>146 мм (5А)</option><option value="6">168 мм (6)</option><option value="7A">178+ мм (7А)</option></select></div>
+    <div class="field"><label>Плотность жидкости, ρ <span class="tooltip-trigger">?</span></label><div class="field-tooltip">Плотность добываемой смеси. Влияет на потребляемую мощность и напор.</div><div class="iw"><input type="number" id="s_rho" placeholder="900" class="has-unit" min="1"><span class="unit">кг/м³</span></div><div class="validation-msg" id="val_s_rho"></div></div>
+    <div class="field"><label>Вязкость, μ <span class="tooltip-trigger">?</span></label><div class="field-tooltip">Динамическая вязкость жидкости. При > 1 сП характеристики насоса корректируются.</div><div class="iw"><input type="number" id="s_visc" placeholder="1" class="has-unit" min="0.1"><span class="unit">сП</span></div><span class="hint" id="visc_hint">Пусто = 1 сП (вода), коррекция не нужна</span></div>
+    <div class="field"><label>Температура на приёме <span class="tooltip-trigger">?</span></label><div class="field-tooltip">Температура флюида на глубине подвески насоса. Учитывается при выборе термостойкости ПЭД.</div><div class="iw"><input type="number" id="s_temp" placeholder="80" class="has-unit" min="-50"><span class="unit">°C</span></div></div>
+    <div class="field"><label>Обводнённость <span class="tooltip-trigger">?</span></label><div class="field-tooltip">Процент воды в продукции. Влияет на плотность смеси и растворимость газа.</div><div class="iw"><input type="number" id="s_wc" placeholder="0" class="has-unit" min="0" max="100"><span class="unit">%</span></div></div>
+    <div class="field"><label>Газовый фактор <span class="tooltip-trigger">?</span></label><div class="field-tooltip">Объём растворённого газа на тонну нефти. При высоком ГФ рекомендуется газосепаратор. Для активации сепаратора необходимо также заполнить глубину, уровень и давление насыщения.</div><div class="iw"><input type="number" id="s_gor" placeholder="0" class="has-unit" min="0"><span class="unit">м³/т</span></div><div class="validation-msg" id="val_s_gor"></div></div>
+    <div class="field"><label>Давление насыщения (опц.) <span class="tooltip-trigger">?</span></label><div class="field-tooltip">Давление, при котором начинается выделение газа из нефти. Необходимо для расчёта свободного газа и работы газосепаратора.</div><div class="iw"><input type="number" id="s_pb" placeholder="10" class="has-unit" min="0"><span class="unit">МПа</span></div></div>
     <div class="divider"></div>
-    <div class="sidebar-title">Уточнённый расчёт напора</div>
-    <div class="toggle-row">
-      <span class="tl">Рассчитать H автоматически</span>
-      <label class="toggle"><input type="checkbox" id="auto_h" onchange="toggleAutoH()"><span class="slider"></span></label>
-    </div>
+    <div class="sidebar-title">Расчёт напора</div>
+    <div class="toggle-row"><span class="tl">Автоматический H</span><label class="toggle"><input type="checkbox" id="auto_h" onchange="toggleAutoH(); autoRecalc();"><span class="slider"></span></label></div>
     <div id="auto_h_fields" style="display:none">
-      <div class="field">
-        <label>Глубина спуска L</label>
-        <div class="iw"><input type="number" id="s_L" placeholder="0" class="has-unit"><span class="unit">м</span></div>
-      </div>
-      <div class="field">
-        <label>Динамический уровень Ндин</label>
-        <div class="iw"><input type="number" id="s_ndin" placeholder="0" class="has-unit"><span class="unit">м</span></div>
-      </div>
-      <div class="field">
-        <label>Давление на устье Рбуф</label>
-        <div class="iw"><input type="number" id="s_pbuf" placeholder="5" class="has-unit"><span class="unit">атм</span></div>
-      </div>
-      <div class="field">
-        <label>Затрубное давление Рзатр</label>
-        <div class="iw"><input type="number" id="s_pzatr" placeholder="1" class="has-unit"><span class="unit">атм</span></div>
-      </div>
-      <div class="field">
-        <label>Запас напора, %</label>
-        <div class="iw"><input type="number" id="s_reserve" placeholder="10" class="has-unit"><span class="unit">%</span></div>
-      </div>
+      <div class="field"><label>Глубина спуска L <span class="tooltip-trigger">?</span></label><div class="field-tooltip">Вертикальная глубина подвески насоса. Необходима для расчёта напора и давления на приёме (для газосепаратора).</div><div class="iw"><input type="number" id="s_L" placeholder="0" class="has-unit" min="0"><span class="unit">м</span></div></div>
+      <div class="field"><label>Динамический уровень Ндин <span class="tooltip-trigger">?</span></label><div class="field-tooltip">Уровень жидкости в скважине при работе насоса. Используется в расчёте напора и давления на приёме.</div><div class="iw"><input type="number" id="s_ndin" placeholder="0" class="has-unit" min="0"><span class="unit">м</span></div><div class="validation-msg" id="val_s_ndin"></div></div>
+      <div class="field"><label>Буферное давление Рбуф <span class="tooltip-trigger">?</span></label><div class="field-tooltip">Давление на устье (в НКТ). Добавляется к напору столба жидкости.</div><div class="iw"><input type="number" id="s_pbuf" placeholder="5" class="has-unit" min="0"><span class="unit">атм</span></div><div class="validation-msg" id="val_s_pbuf"></div></div>
+      <div class="field"><label>Затрубное давление Рзатр <span class="tooltip-trigger">?</span></label><div class="field-tooltip">Давление газа в затрубном пространстве. Участвует в расчёте давления на приёме.</div><div class="iw"><input type="number" id="s_pzatr" placeholder="1" class="has-unit" min="0"><span class="unit">атм</span></div></div>
+      <div class="field"><label>Запас напора, % <span class="tooltip-trigger">?</span></label><div class="field-tooltip">Процент запаса к расчётному напору для компенсации износа.</div><div class="iw"><input type="number" id="s_reserve" placeholder="10" class="has-unit" min="0"><span class="unit">%</span></div></div>
     </div>
-
     <div class="divider"></div>
-    <div class="sidebar-title">Режим работы</div>
-    <div class="field">
-      <label>Частота ЧРП</label>
-      <div class="iw"><input type="number" id="s_freq" placeholder="50" class="has-unit"><span class="unit">Гц</span></div>
-      <span class="hint">50 Гц — номинальный режим (паспортные характеристики)</span>
-    </div>
-    <div class="field">
-      <label>Исполнение насоса</label>
-      <select id="s_exec">
-        <option value="all">Все исполнения</option>
-        <option value="niresist">Нирезист (стандарт)</option>
-        <option value="pkm">ПКМ (износостойкие колёса)</option>
-      </select>
-    </div>
+    <div class="sidebar-title">Режим</div>
+    <div class="field"><label>Частота ЧРП <span class="tooltip-trigger">?</span></label><div class="field-tooltip">Рабочая частота преобразователя. Влияет на подачу и напор. Асинхронные ПЭД: 40‑60 Гц, вентильные: 35‑200 Гц.</div><div class="iw"><input type="number" id="s_freq" placeholder="50" class="has-unit" min="1"><span class="unit">Гц</span></div></div>
+    <div class="field"><label>Исполнение насоса <span class="tooltip-trigger">?</span></label><div class="field-tooltip">Материал рабочих колёс: нирезист (стандарт) или ПКМ (повышенная износостойкость).</div><select id="s_exec"><option value="all">Все</option><option value="niresist">Нирезист</option><option value="pkm">ПКМ</option></select></div>
+    <div class="field"><label>Газосепаратор <span class="tooltip-trigger">?</span></label><div class="field-tooltip">Применение газосепаратора снижает долю свободного газа на приёме насоса. Требует заполнения L, Ндин, ГФ и Рнас.</div><select id="s_gas_sep" onchange="selectESP()"><option value="none" selected>Нет</option><option value="sep">Газосепаратор</option><option value="disp">Газосепаратор-диспергатор</option></select></div>
 
-    <button class="btn-calc" onclick="selectESP()">
-      Подобрать оборудование
-    </button>
+    <button class="btn-calc" onclick="selectESP()">Подобрать оборудование</button>
   </div>
 
   <div class="results-pane" id="results_pane">
     <div class="empty" id="empty_state">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
-      </svg>
-      <h3>Введите параметры скважины</h3>
-      <p>Укажите дебит и требуемый напор — система подберёт подходящее оборудование из каталога</p>
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      <h3>Введите параметры скважины</h3><p>Укажите дебит и напор — система подберёт оборудование с учётом тепловых, кабельных и механических ограничений</p>
     </div>
-
     <div id="results_content" style="display:none">
-      <div class="page-header">
-        <div class="eyebrow">Результаты подбора</div>
-        <div class="page-title" id="res_title">—</div>
-        <div class="page-desc" id="res_desc">—</div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="page-header"><div class="eyebrow">Результаты подбора</div><div class="page-title" id="res_title">—</div><div class="page-desc" id="res_desc">—</div></div>
+        <button class="print-btn" onclick="window.print()">🖨️ Печать отчёта</button>
+        <button class="btn-secondary" id="compare_btn" style="width:auto; padding:6px 12px;" onclick="showComparison()">📊 Сравнить выбранные</button>
       </div>
-
       <div class="summary-strip" id="summary_strip"></div>
-
-      <div id="warn_banner" style="display:none" class="warn-banner">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        <p id="warn_text"></p>
-      </div>
-
+      <div id="warn_banner" style="display:none" class="warn-banner"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><p id="warn_text"></p></div>
       <div class="results-count" id="results_count"></div>
       <div class="pump-list" id="pump_list"></div>
     </div>
   </div>
 </div>
+<footer class="footer-bar"><div>Разработчик: А.И. Носар | Developer: A.I. Nosar</div><div>ESP Selector v8.6.1 · © 2026</div></footer>
 
-<footer class="footer-bar">
-  <div class="footer-left">Разработчик: А.И. Носар &nbsp;|&nbsp; Developer: A.I. Nosar</div>
-  <div class="footer-right">ESP Selector v5 &nbsp;·&nbsp; © 2026</div>
-</footer>
+<div class="modal" id="compare_modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Сравнение вариантов</h2>
+      <span class="modal-close" onclick="closeComparison()">&times;</span>
+    </div>
+    <div id="compare_content"></div>
+  </div>
+</div>
 
 <script>
-// ═══════════════════════════════════════════
-// ВСТРОЕННЫЙ КАТАЛОГ ООО «НОВЫЕ ТЕХНОЛОГИИ» 2026
-// ═══════════════════════════════════════════
+// ==================== ПОЛНЫЙ КАТАЛОГ (v10.0) ====================
 const CATALOG = {
-  "pumps": [
-    {"name":"Х25ЭЦНКИС2А-30И","q50":30,"qmin":20,"qmax":42,"h_sec":560,"n100":8.0,"eff":42,"diam":69,"gab":"2A","mat":"нирезист","minCol":90,"maxPwrDir":61,"maxPwrSoft":77},
-    {"name":"Х25ЭЦНКИС2А-50И","q50":50,"qmin":33,"qmax":68,"h_sec":720,"n100":8.0,"eff":46,"diam":69,"gab":"2A","mat":"нирезист","minCol":90,"maxPwrDir":68,"maxPwrSoft":86},
-    {"name":"Х25ЭЦНКИС2А-60И","q50":60,"qmin":40,"qmax":82,"h_sec":910,"n100":7.0,"eff":48,"diam":69,"gab":"2A","mat":"нирезист","minCol":90,"maxPwrDir":81,"maxPwrSoft":103},
-    {"name":"Х22ЭЦНКИС2А-80И","q50":80,"qmin":52,"qmax":108,"h_sec":719,"n100":10.4,"eff":48,"diam":69,"gab":"2A","mat":"нирезист","minCol":90,"maxPwrDir":65,"maxPwrSoft":82},
-    {"name":"Х22ЭЦНКИС2А-100И","q50":100,"qmin":65,"qmax":135,"h_sec":1122,"n100":20.8,"eff":52,"diam":69,"gab":"2A","mat":"нирезист","minCol":90,"maxPwrDir":81,"maxPwrSoft":125},
-    {"name":"Х22ЭЦНКИС2А-160","q50":160,"qmin":104,"qmax":216,"h_sec":2100,"n100":28.6,"eff":55,"diam":69,"gab":"2A","mat":"нирезист","minCol":90,"maxPwrDir":81,"maxPwrSoft":125},
-    {"name":"Х22ЭЦНКИС2А-200","q50":200,"qmin":130,"qmax":270,"h_sec":675,"n100":33.3,"eff":58,"diam":69,"gab":"2A","mat":"нирезист","minCol":90,"maxPwrDir":81,"maxPwrSoft":103},
-    {"name":"Х25ПЭЦНКИС2А-80И","q50":80,"qmin":52,"qmax":108,"h_sec":719,"n100":10.4,"eff":48,"diam":69,"gab":"2A","mat":"ПКМ","minCol":90,"maxPwrDir":65,"maxPwrSoft":82},
-    {"name":"Х25ЭЦНКИС3-80И","q50":80,"qmin":52,"qmax":108,"h_sec":1500,"n100":26.1,"eff":64,"diam":81,"gab":"3","mat":"нирезист","minCol":102,"maxPwrDir":106,"maxPwrSoft":134},
-    {"name":"Х25ЭЦНКИС3-160","q50":160,"qmin":104,"qmax":216,"h_sec":1085,"n100":30.9,"eff":55,"diam":81,"gab":"3","mat":"нирезист","minCol":102,"maxPwrDir":96,"maxPwrSoft":122},
-    {"name":"Х22ЭЦНКИС3-350","q50":350,"qmin":228,"qmax":473,"h_sec":1162,"n100":46.0,"eff":59,"diam":81,"gab":"3","mat":"нирезист","minCol":102,"maxPwrDir":95,"maxPwrSoft":120},
-    {"name":"X22ЭЦНКИД5-20","q50":20,"qmin":13,"qmax":28,"h_sec":460,"n100":3.6,"eff":42,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":100,"maxPwrSoft":120},
-    {"name":"X22ЭЦНКИС5-25И","q50":25,"qmin":16,"qmax":35,"h_sec":485,"n100":3.2,"eff":42,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":100,"maxPwrSoft":120},
-    {"name":"X22ЭЦНКИД5-30","q50":30,"qmin":20,"qmax":42,"h_sec":520,"n100":4.8,"eff":44,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":120,"maxPwrSoft":150},
-    {"name":"X22ЭЦНКИС5-30И","q50":30,"qmin":20,"qmax":42,"h_sec":468,"n100":3.2,"eff":44,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":120,"maxPwrSoft":150},
-    {"name":"X22ЭЦНКИД5-35","q50":35,"qmin":23,"qmax":49,"h_sec":450,"n100":5.0,"eff":46,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":120,"maxPwrSoft":150},
-    {"name":"X22ЭЦНКИД5-45","q50":45,"qmin":29,"qmax":62,"h_sec":438,"n100":5.0,"eff":50,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":130,"maxPwrSoft":160},
-    {"name":"X22ЭЦНКИД5-50","q50":50,"qmin":33,"qmax":68,"h_sec":510,"n100":6.0,"eff":58,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":130,"maxPwrSoft":160},
-    {"name":"X22ЭЦНКИД5-60","q50":60,"qmin":40,"qmax":82,"h_sec":475,"n100":7.0,"eff":58,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":130,"maxPwrSoft":160},
-    {"name":"X22ЭЦНКИД5-80","q50":80,"qmin":52,"qmax":108,"h_sec":432,"n100":7.0,"eff":60,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":150,"maxPwrSoft":180},
-    {"name":"X22ЭЦНКИД5-80И","q50":80,"qmin":52,"qmax":108,"h_sec":811,"n100":9.0,"eff":62,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":150,"maxPwrSoft":180},
-    {"name":"X22ЭЦНКИД5-100","q50":100,"qmin":65,"qmax":135,"h_sec":466,"n100":10.0,"eff":63,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":160,"maxPwrSoft":200},
-    {"name":"X22ЭЦНКИД5-100И","q50":100,"qmin":65,"qmax":135,"h_sec":465,"n100":10.0,"eff":63,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":160,"maxPwrSoft":200},
-    {"name":"X22ЭЦНКИД5-125","q50":125,"qmin":82,"qmax":168,"h_sec":470,"n100":9.0,"eff":64,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":170,"maxPwrSoft":210},
-    {"name":"X22ЭЦНКИД5-125М","q50":125,"qmin":82,"qmax":168,"h_sec":869,"n100":10.0,"eff":64,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":170,"maxPwrSoft":210},
-    {"name":"X22ЭЦНКИ5-125","q50":125,"qmin":82,"qmax":168,"h_sec":485,"n100":9.0,"eff":64,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":170,"maxPwrSoft":210},
-    {"name":"X22ЭЦНКИД5-160","q50":160,"qmin":104,"qmax":216,"h_sec":329,"n100":10.0,"eff":65,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":180,"maxPwrSoft":220},
-    {"name":"X22ЭЦНКИД5-200И","q50":200,"qmin":130,"qmax":270,"h_sec":304,"n100":16.0,"eff":66,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":200,"maxPwrSoft":250},
-    {"name":"X22ЭЦНКИД5-200М","q50":200,"qmin":130,"qmax":270,"h_sec":1207,"n100":9.0,"eff":66,"diam":92,"gab":"5","mat":"нирезист","minCol":140,"maxPwrDir":200,"maxPwrSoft":250},
-    {"name":"X22ПЭЦНКИД5-30","q50":30,"qmin":20,"qmax":42,"h_sec":520,"n100":5.0,"eff":48,"diam":92,"gab":"5","mat":"ПКМ","minCol":140,"maxPwrDir":120,"maxPwrSoft":150},
-    {"name":"X22ПЭЦНКИД5-45","q50":45,"qmin":29,"qmax":62,"h_sec":438,"n100":5.0,"eff":52,"diam":92,"gab":"5","mat":"ПКМ","minCol":140,"maxPwrDir":130,"maxPwrSoft":160},
-    {"name":"X22ПЭЦНКИД5-50","q50":50,"qmin":33,"qmax":68,"h_sec":510,"n100":6.0,"eff":58,"diam":92,"gab":"5","mat":"ПКМ","minCol":140,"maxPwrDir":130,"maxPwrSoft":160},
-    {"name":"X22ПЭЦНКИД5-60","q50":60,"qmin":40,"qmax":82,"h_sec":475,"n100":7.0,"eff":60,"diam":92,"gab":"5","mat":"ПКМ","minCol":140,"maxPwrDir":130,"maxPwrSoft":160},
-    {"name":"X22ПЭЦНКИД5-80","q50":80,"qmin":52,"qmax":108,"h_sec":432,"n100":7.0,"eff":62,"diam":92,"gab":"5","mat":"ПКМ","minCol":140,"maxPwrDir":150,"maxPwrSoft":180},
-    {"name":"X22ПЭЦНКИ5-125","q50":125,"qmin":82,"qmax":168,"h_sec":485,"n100":9.0,"eff":64,"diam":92,"gab":"5","mat":"ПКМ","minCol":140,"maxPwrDir":170,"maxPwrSoft":210},
-    {"name":"X22ПЭЦНКИ5-145","q50":145,"qmin":94,"qmax":196,"h_sec":485,"n100":10.0,"eff":65,"diam":92,"gab":"5","mat":"ПКМ","minCol":140,"maxPwrDir":170,"maxPwrSoft":210},
-    {"name":"X22ПЭЦНКИ5-200И","q50":200,"qmin":130,"qmax":270,"h_sec":304,"n100":16.0,"eff":66,"diam":92,"gab":"5","mat":"ПКМ","minCol":140,"maxPwrDir":200,"maxPwrSoft":250},
-    {"name":"X22ЭЦНКИД5А-25И","q50":25,"qmin":16,"qmax":35,"h_sec":1200,"n100":5.0,"eff":48,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":130,"maxPwrSoft":160},
-    {"name":"X22ЭЦНКИД5А-35И","q50":35,"qmin":23,"qmax":49,"h_sec":1050,"n100":6.0,"eff":50,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":130,"maxPwrSoft":160},
-    {"name":"X22ЭЦНКИД5А-35","q50":35,"qmin":23,"qmax":49,"h_sec":1050,"n100":6.0,"eff":50,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":130,"maxPwrSoft":160},
-    {"name":"X22ЭЦНКИД5А-45","q50":45,"qmin":29,"qmax":62,"h_sec":960,"n100":7.0,"eff":52,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":140,"maxPwrSoft":170},
-    {"name":"X22ЭЦНКИД5А-50","q50":50,"qmin":33,"qmax":68,"h_sec":920,"n100":8.0,"eff":54,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":140,"maxPwrSoft":170},
-    {"name":"X22ЭЦНКИД5А-60","q50":60,"qmin":40,"qmax":82,"h_sec":840,"n100":9.0,"eff":56,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":150,"maxPwrSoft":180},
-    {"name":"X22ЭЦНКИД5А-80И","q50":80,"qmin":52,"qmax":108,"h_sec":720,"n100":10.0,"eff":58,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":160,"maxPwrSoft":200},
-    {"name":"X22ЭЦНКИД5А-100","q50":100,"qmin":65,"qmax":135,"h_sec":640,"n100":11.0,"eff":60,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":170,"maxPwrSoft":210},
-    {"name":"X22ЭЦНКИД5А-125","q50":125,"qmin":82,"qmax":168,"h_sec":580,"n100":12.0,"eff":62,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":180,"maxPwrSoft":220},
-    {"name":"X22ЭЦНКИД5А-160И","q50":160,"qmin":104,"qmax":216,"h_sec":500,"n100":14.0,"eff":64,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":200,"maxPwrSoft":240},
-    {"name":"X22ЭЦНКИД5А-160М","q50":160,"qmin":104,"qmax":216,"h_sec":520,"n100":15.0,"eff":64,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":200,"maxPwrSoft":240},
-    {"name":"X22ЭЦНКИД5А-200М","q50":200,"qmin":130,"qmax":270,"h_sec":450,"n100":17.0,"eff":66,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":220,"maxPwrSoft":260},
-    {"name":"X22ЭЦНКИД5А-250","q50":250,"qmin":163,"qmax":338,"h_sec":400,"n100":20.0,"eff":68,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":250,"maxPwrSoft":300},
-    {"name":"X22ЭЦНКИД5А-250М","q50":250,"qmin":163,"qmax":338,"h_sec":420,"n100":21.0,"eff":68,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":250,"maxPwrSoft":300},
-    {"name":"X22ЭЦНКИД5А-280М","q50":280,"qmin":182,"qmax":378,"h_sec":380,"n100":23.0,"eff":70,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":270,"maxPwrSoft":320},
-    {"name":"X22ЭЦНКИД5А-320","q50":320,"qmin":208,"qmax":432,"h_sec":350,"n100":25.0,"eff":72,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":280,"maxPwrSoft":340},
-    {"name":"X22ЭЦНКИД5А-360","q50":360,"qmin":234,"qmax":486,"h_sec":310,"n100":28.0,"eff":73,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":300,"maxPwrSoft":360},
-    {"name":"X22ЭЦНКИД5А-400","q50":400,"qmin":260,"qmax":540,"h_sec":290,"n100":30.0,"eff":74,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":320,"maxPwrSoft":380},
-    {"name":"X22ЭЦНКИД5А-400М","q50":400,"qmin":260,"qmax":540,"h_sec":300,"n100":32.0,"eff":74,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":320,"maxPwrSoft":380},
-    {"name":"X22ЭЦНКИД5А-500","q50":500,"qmin":325,"qmax":675,"h_sec":250,"n100":35.0,"eff":76,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":360,"maxPwrSoft":420},
-    {"name":"X22ЭЦНКИД5А-500М","q50":500,"qmin":325,"qmax":675,"h_sec":260,"n100":38.0,"eff":76,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":360,"maxPwrSoft":420},
-    {"name":"X22ЭЦНКИС5А-700","q50":700,"qmin":455,"qmax":945,"h_sec":200,"n100":45.0,"eff":78,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":400,"maxPwrSoft":480},
-    {"name":"X22ЭЦНКИС5А-800","q50":800,"qmin":520,"qmax":1080,"h_sec":170,"n100":50.0,"eff":79,"diam":103,"gab":"5A","mat":"нирезист","minCol":130,"maxPwrDir":450,"maxPwrSoft":520},
-    {"name":"X22ПЭЦНКИД5А-35И","q50":35,"qmin":23,"qmax":49,"h_sec":1050,"n100":6.0,"eff":50,"diam":103,"gab":"5A","mat":"ПКМ","minCol":130,"maxPwrDir":130,"maxPwrSoft":160},
-    {"name":"X22ПЭЦНКИД5А-60И","q50":60,"qmin":40,"qmax":82,"h_sec":840,"n100":9.0,"eff":56,"diam":103,"gab":"5A","mat":"ПКМ","minCol":130,"maxPwrDir":150,"maxPwrSoft":180},
-    {"name":"X22ПЭЦНКИ5А-160М","q50":160,"qmin":104,"qmax":216,"h_sec":520,"n100":15.0,"eff":64,"diam":103,"gab":"5A","mat":"ПКМ","minCol":130,"maxPwrDir":200,"maxPwrSoft":240},
-    {"name":"X22ПЭЦНКИ5А-250","q50":250,"qmin":163,"qmax":338,"h_sec":400,"n100":20.0,"eff":68,"diam":103,"gab":"5A","mat":"ПКМ","minCol":130,"maxPwrDir":250,"maxPwrSoft":300},
-    {"name":"X22ПЭЦНКИД5А-400","q50":400,"qmin":260,"qmax":540,"h_sec":290,"n100":30.0,"eff":74,"diam":103,"gab":"5A","mat":"ПКМ","minCol":130,"maxPwrDir":320,"maxPwrSoft":380},
-    {"name":"X22ЭЦНКИС6-1000","q50":1000,"qmin":650,"qmax":1350,"h_sec":160,"n100":190,"eff":58,"diam":114,"gab":"6","mat":"нирезист","minCol":168,"maxPwrDir":500,"maxPwrSoft":600},
-    {"name":"X22ЭЦНКИС6-1250","q50":1250,"qmin":812,"qmax":1688,"h_sec":130,"n100":220,"eff":58,"diam":114,"gab":"6","mat":"нирезист","minCol":168,"maxPwrDir":600,"maxPwrSoft":720},
-    {"name":"X22ЭЦНКИС7А-1000","q50":1000,"qmin":650,"qmax":1350,"h_sec":180,"n100":210,"eff":59,"diam":136,"gab":"7A","mat":"нирезист","minCol":178,"maxPwrDir":600,"maxPwrSoft":720},
-    {"name":"X22ЭЦНКИС7А-1500","q50":1500,"qmin":975,"qmax":2025,"h_sec":140,"n100":290,"eff":59,"diam":136,"gab":"7A","mat":"нирезист","minCol":178,"maxPwrDir":700,"maxPwrSoft":840},
-    {"name":"X22ЭЦНКИС7А-1600","q50":1600,"qmin":1040,"qmax":2160,"h_sec":130,"n100":305,"eff":59,"diam":136,"gab":"7A","mat":"нирезист","minCol":178,"maxPwrDir":750,"maxPwrSoft":900},
-    {"name":"ВН5-50-1500","type":"винтовой","q50":50,"qmin":20,"qmax":70,"h_sec":1500,"n100":15.0,"eff":65,"diam":102,"gab":"5A","mat":"винт","minCol":130,"maxPwrDir":100,"maxPwrSoft":140}
+  pumps: [
+    // 2А нирезист
+    {name:"Х22ЭЦНКИС2А-30И",q50:30,qmin:20,qmax:42,h_sec:560,n100:8.0,eff:42,diam:69,gab:"2A",mat:"нирезист",minCol:90,maxPwrDir:61,maxPwrSoft:77,l_sec:0.36,stages_per_section:100},
+    {name:"Х25ЭЦНКИС2А-30И",q50:30,qmin:20,qmax:42,h_sec:560,n100:8.0,eff:42,diam:69,gab:"2A",mat:"нирезист",minCol:90,maxPwrDir:61,maxPwrSoft:77,l_sec:0.36,stages_per_section:100},
+    {name:"Х22ЭЦНКИС2А-50И",q50:50,qmin:33,qmax:68,h_sec:720,n100:8.0,eff:46,diam:69,gab:"2A",mat:"нирезист",minCol:90,maxPwrDir:68,maxPwrSoft:86,l_sec:0.36,stages_per_section:100},
+    {name:"Х25ЭЦНКИС2А-50И",q50:50,qmin:33,qmax:68,h_sec:720,n100:8.0,eff:46,diam:69,gab:"2A",mat:"нирезист",minCol:90,maxPwrDir:68,maxPwrSoft:86,l_sec:0.36,stages_per_section:100},
+    {name:"Х22ЭЦНКИС2А-60И",q50:60,qmin:40,qmax:82,h_sec:910,n100:7.0,eff:48,diam:69,gab:"2A",mat:"нирезист",minCol:90,maxPwrDir:81,maxPwrSoft:103,l_sec:0.32,stages_per_section:100},
+    {name:"Х25ЭЦНКИС2А-60И",q50:60,qmin:40,qmax:82,h_sec:910,n100:7.0,eff:48,diam:69,gab:"2A",mat:"нирезист",minCol:90,maxPwrDir:81,maxPwrSoft:103,l_sec:0.32,stages_per_section:100},
+    {name:"Х22ЭЦНКИС2А-80И",q50:80,qmin:52,qmax:108,h_sec:719,n100:10.4,eff:48,diam:69,gab:"2A",mat:"нирезист",minCol:90,maxPwrDir:65,maxPwrSoft:82,l_sec:0.47,stages_per_section:100},
+    {name:"Х25ЭЦНКИС2А-80И",q50:80,qmin:52,qmax:108,h_sec:719,n100:10.4,eff:48,diam:69,gab:"2A",mat:"нирезист",minCol:90,maxPwrDir:65,maxPwrSoft:82,l_sec:0.47,stages_per_section:100},
+    {name:"Х22ЭЦНКИС2А-100И",q50:100,qmin:65,qmax:135,h_sec:1122,n100:20.8,eff:52,diam:69,gab:"2A",mat:"нирезист",minCol:90,maxPwrDir:81,maxPwrSoft:125,l_sec:0.94,stages_per_section:100},
+    {name:"Х25ЭЦНКИС2А-100И",q50:100,qmin:65,qmax:135,h_sec:1122,n100:20.8,eff:52,diam:69,gab:"2A",mat:"нирезист",minCol:90,maxPwrDir:81,maxPwrSoft:125,l_sec:0.94,stages_per_section:100},
+    {name:"Х22ЭЦНКИС2А-160",q50:160,qmin:104,qmax:216,h_sec:2100,n100:28.6,eff:55,diam:69,gab:"2A",mat:"нирезист",minCol:90,maxPwrDir:81,maxPwrSoft:125,l_sec:1.29,stages_per_section:100},
+    {name:"Х25ЭЦНКИС2А-160",q50:160,qmin:104,qmax:216,h_sec:2100,n100:28.6,eff:55,diam:69,gab:"2A",mat:"нирезист",minCol:90,maxPwrDir:81,maxPwrSoft:125,l_sec:1.29,stages_per_section:100},
+    {name:"Х22ЭЦНКИС2А-200",q50:200,qmin:130,qmax:270,h_sec:675,n100:33.3,eff:58,diam:69,gab:"2A",mat:"нирезист",minCol:90,maxPwrDir:81,maxPwrSoft:103,l_sec:1.50,stages_per_section:100},
+    {name:"Х25ЭЦНКИС2А-200",q50:200,qmin:130,qmax:270,h_sec:675,n100:33.3,eff:58,diam:69,gab:"2A",mat:"нирезист",minCol:90,maxPwrDir:81,maxPwrSoft:103,l_sec:1.50,stages_per_section:100},
+    // 2А ПКМ
+    {name:"Х25ПЭЦНКИС2А-80И",q50:80,qmin:52,qmax:108,h_sec:719,n100:10.4,eff:48,diam:69,gab:"2A",mat:"ПКМ",minCol:90,maxPwrDir:65,maxPwrSoft:82,l_sec:0.47,stages_per_section:100},
+    // 3 нирезист
+    {name:"Х25ЭЦНКИС3-80И",q50:80,qmin:52,qmax:108,h_sec:1500,n100:26.1,eff:64,diam:81,gab:"3",mat:"нирезист",minCol:102,maxPwrDir:106,maxPwrSoft:134,l_sec:1.17,stages_per_section:100},
+    {name:"Х25ЭЦНКИС3-160",q50:160,qmin:104,qmax:216,h_sec:1085,n100:30.9,eff:55,diam:81,gab:"3",mat:"нирезист",minCol:102,maxPwrDir:96,maxPwrSoft:122,l_sec:1.39,stages_per_section:100},
+    {name:"Х22ЭЦНКИС3-350",q50:350,qmin:228,qmax:473,h_sec:1162,n100:46.0,eff:59,diam:81,gab:"3",mat:"нирезист",minCol:102,maxPwrDir:95,maxPwrSoft:120,l_sec:2.07,stages_per_section:100},
+    // 5 нирезист
+    {name:"X22ЭЦНКИД5-20",q50:20,qmin:13,qmax:28,h_sec:460,n100:3.6,eff:42,diam:92,gab:"5",mat:"нирезист",minCol:140,maxPwrDir:100,maxPwrSoft:120,l_sec:0.16,stages_per_section:100},
+    {name:"X22ЭЦНКИС5-25И",q50:25,qmin:16,qmax:35,h_sec:485,n100:3.2,eff:42,diam:92,gab:"5",mat:"нирезист",minCol:140,maxPwrDir:100,maxPwrSoft:120,l_sec:0.14,stages_per_section:100},
+    {name:"X22ЭЦНКИД5-30",q50:30,qmin:20,qmax:42,h_sec:520,n100:4.8,eff:44,diam:92,gab:"5",mat:"нирезист",minCol:140,maxPwrDir:120,maxPwrSoft:150,l_sec:0.22,stages_per_section:100},
+    {name:"X22ЭЦНКИС5-30И",q50:30,qmin:20,qmax:42,h_sec:468,n100:3.2,eff:44,diam:92,gab:"5",mat:"нирезист",minCol:140,maxPwrDir:120,maxPwrSoft:150,l_sec:0.14,stages_per_section:100},
+    {name:"X22ЭЦНКИД5-35",q50:35,qmin:23,qmax:49,h_sec:450,n100:5.0,eff:46,diam:92,gab:"5",mat:"нирезист",minCol:140,maxPwrDir:120,maxPwrSoft:150,l_sec:0.23,stages_per_section:100},
+    {name:"X22ЭЦНКИД5-45",q50:45,qmin:29,qmax:62,h_sec:438,n100:5.0,eff:50,diam:92,gab:"5",mat:"нирезист",minCol:140,maxPwrDir:130,maxPwrSoft:160,l_sec:0.23,stages_per_section:100},
+    {name:"X22ЭЦНКИД5-50",q50:50,qmin:33,qmax:68,h_sec:510,n100:6.0,eff:58,diam:92,gab:"5",mat:"нирезист",minCol:140,maxPwrDir:130,maxPwrSoft:160,l_sec:0.27,stages_per_section:100},
+    {name:"X22ЭЦНКИД5-60",q50:60,qmin:40,qmax:82,h_sec:475,n100:7.0,eff:58,diam:92,gab:"5",mat:"нирезист",minCol:140,maxPwrDir:130,maxPwrSoft:160,l_sec:0.32,stages_per_section:100},
+    {name:"X22ЭЦНКИД5-80",q50:80,qmin:52,qmax:108,h_sec:432,n100:7.0,eff:60,diam:92,gab:"5",mat:"нирезист",minCol:140,maxPwrDir:150,maxPwrSoft:180,l_sec:0.32,stages_per_section:100},
+    {name:"X22ЭЦНКИД5-80И",q50:80,qmin:52,qmax:108,h_sec:811,n100:9.0,eff:62,diam:92,gab:"5",mat:"нирезист",minCol:140,maxPwrDir:150,maxPwrSoft:180,l_sec:0.41,stages_per_section:100},
+    {name:"X22ЭЦНКИД5-100",q50:100,qmin:65,qmax:135,h_sec:466,n100:10.0,eff:63,diam:92,gab:"5",mat:"нирезист",minCol:140,maxPwrDir:160,maxPwrSoft:200,l_sec:0.45,stages_per_section:100},
+    {name:"X22ЭЦНКИД5-100И",q50:100,qmin:65,qmax:135,h_sec:465,n100:10.0,eff:63,diam:92,gab:"5",mat:"нирезист",minCol:140,maxPwrDir:160,maxPwrSoft:200,l_sec:0.45,stages_per_section:100},
+    {name:"X22ЭЦНКИД5-125",q50:125,qmin:82,qmax:168,h_sec:470,n100:9.0,eff:64,diam:92,gab:"5",mat:"нирезист",minCol:140,maxPwrDir:170,maxPwrSoft:210,l_sec:0.41,stages_per_section:100},
+    {name:"X22ЭЦНКИД5-125М",q50:125,qmin:82,qmax:168,h_sec:869,n100:10.0,eff:64,diam:92,gab:"5",mat:"нирезист",minCol:140,maxPwrDir:170,maxPwrSoft:210,l_sec:0.45,stages_per_section:100},
+    {name:"X22ЭЦНКИ5-125",q50:125,qmin:82,qmax:168,h_sec:485,n100:9.0,eff:64,diam:92,gab:"5",mat:"нирезист",minCol:140,maxPwrDir:170,maxPwrSoft:210,l_sec:0.41,stages_per_section:100},
+    {name:"X22ЭЦНКИД5-160",q50:160,qmin:104,qmax:216,h_sec:329,n100:10.0,eff:65,diam:92,gab:"5",mat:"нирезист",minCol:140,maxPwrDir:180,maxPwrSoft:220,l_sec:0.45,stages_per_section:100},
+    {name:"X22ЭЦНКИД5-200И",q50:200,qmin:130,qmax:270,h_sec:304,n100:16.0,eff:66,diam:92,gab:"5",mat:"нирезист",minCol:140,maxPwrDir:200,maxPwrSoft:250,l_sec:0.72,stages_per_section:100},
+    {name:"X22ЭЦНКИД5-200М",q50:200,qmin:130,qmax:270,h_sec:1207,n100:9.0,eff:66,diam:92,gab:"5",mat:"нирезист",minCol:140,maxPwrDir:200,maxPwrSoft:250,l_sec:0.41,stages_per_section:100},
+    // 5 ПКМ
+    {name:"X22ПЭЦНКИД5-30",q50:30,qmin:20,qmax:42,h_sec:520,n100:5.0,eff:48,diam:92,gab:"5",mat:"ПКМ",minCol:140,maxPwrDir:120,maxPwrSoft:150,l_sec:0.23,stages_per_section:100},
+    {name:"X22ПЭЦНКИД5-45",q50:45,qmin:29,qmax:62,h_sec:438,n100:5.0,eff:52,diam:92,gab:"5",mat:"ПКМ",minCol:140,maxPwrDir:130,maxPwrSoft:160,l_sec:0.23,stages_per_section:100},
+    {name:"X22ПЭЦНКИД5-50",q50:50,qmin:33,qmax:68,h_sec:510,n100:6.0,eff:58,diam:92,gab:"5",mat:"ПКМ",minCol:140,maxPwrDir:130,maxPwrSoft:160,l_sec:0.27,stages_per_section:100},
+    {name:"X22ПЭЦНКИД5-60",q50:60,qmin:40,qmax:82,h_sec:475,n100:7.0,eff:60,diam:92,gab:"5",mat:"ПКМ",minCol:140,maxPwrDir:130,maxPwrSoft:160,l_sec:0.32,stages_per_section:100},
+    {name:"X22ПЭЦНКИД5-80",q50:80,qmin:52,qmax:108,h_sec:432,n100:7.0,eff:62,diam:92,gab:"5",mat:"ПКМ",minCol:140,maxPwrDir:150,maxPwrSoft:180,l_sec:0.32,stages_per_section:100},
+    {name:"X22ПЭЦНКИ5-125",q50:125,qmin:82,qmax:168,h_sec:485,n100:9.0,eff:64,diam:92,gab:"5",mat:"ПКМ",minCol:140,maxPwrDir:170,maxPwrSoft:210,l_sec:0.41,stages_per_section:100},
+    {name:"X22ПЭЦНКИ5-145",q50:145,qmin:94,qmax:196,h_sec:485,n100:10.0,eff:65,diam:92,gab:"5",mat:"ПКМ",minCol:140,maxPwrDir:170,maxPwrSoft:210,l_sec:0.45,stages_per_section:100},
+    {name:"X22ПЭЦНКИ5-200И",q50:200,qmin:130,qmax:270,h_sec:304,n100:16.0,eff:66,diam:92,gab:"5",mat:"ПКМ",minCol:140,maxPwrDir:200,maxPwrSoft:250,l_sec:0.72,stages_per_section:100},
+    // 5А нирезист
+    {name:"X22ЭЦНКИД5А-25И",q50:25,qmin:16,qmax:35,h_sec:1200,n100:5.0,eff:48,diam:103,gab:"5A",mat:"нирезист",minCol:130,maxPwrDir:130,maxPwrSoft:160,l_sec:0.23,stages_per_section:100},
+    {name:"X22ЭЦНКИД5А-35И",q50:35,qmin:23,qmax:49,h_sec:1050,n100:6.0,eff:50,diam:103,gab:"5A",mat:"нирезист",minCol:130,maxPwrDir:130,maxPwrSoft:160,l_sec:0.27,stages_per_section:100},
+    {name:"X22ЭЦНКИД5А-35",q50:35,qmin:23,qmax:49,h_sec:1050,n100:6.0,eff:50,diam:103,gab:"5A",mat:"нирезист",minCol:130,maxPwrDir:130,maxPwrSoft:160,l_sec:0.27,stages_per_section:100},
+    {name:"X22ЭЦНКИД5А-45",q50:45,qmin:29,qmax:62,h_sec:960,n100:7.0,eff:52,diam:103,gab:"5A",mat:"нирезист",minCol:130,maxPwrDir:140,maxPwrSoft:170,l_sec:0.32,stages_per_section:100},
+    {name:"X22ЭЦНКИД5А-50",q50:50,qmin:33,qmax:68,h_sec:920,n100:8.0,eff:54,diam:103,gab:"5A",mat:"нирезист",minCol:130,maxPwrDir:140,maxPwrSoft:170,l_sec:0.36,stages_per_section:100},
+    {name:"X22ЭЦНКИД5А-60",q50:60,qmin:40,qmax:82,h_sec:840,n100:9.0,eff:56,diam:103,gab:"5A",mat:"нирезист",minCol:130,maxPwrDir:150,maxPwrSoft:180,l_sec:0.41,stages_per_section:100},
+    {name:"X22ЭЦНКИД5А-80И",q50:80,qmin:52,qmax:108,h_sec:720,n100:10.0,eff:58,diam:103,gab:"5A",mat:"нирезист",minCol:130,maxPwrDir:160,maxPwrSoft:200,l_sec:0.45,stages_per_section:100},
+    {name:"X22ЭЦНКИД5А-100",q50:100,qmin:65,qmax:135,h_sec:640,n100:11.0,eff:60,diam:103,gab:"5A",mat:"нирезист",minCol:130,maxPwrDir:170,maxPwrSoft:210,l_sec:0.50,stages_per_section:100},
+    {name:"X22ЭЦНКИД5А-125",q50:125,qmin:82,qmax:168,h_sec:580,n100:12.0,eff:62,diam:103,gab:"5A",mat:"нирезист",minCol:130,maxPwrDir:180,maxPwrSoft:220,l_sec:0.54,stages_per_section:100},
+    {name:"X22ЭЦНКИД5А-160И",q50:160,qmin:104,qmax:216,h_sec:500,n100:14.0,eff:64,diam:103,gab:"5A",mat:"нирезист",minCol:130,maxPwrDir:200,maxPwrSoft:240,l_sec:0.63,stages_per_section:100},
+    {name:"X22ЭЦНКИД5А-160М",q50:160,qmin:104,qmax:216,h_sec:520,n100:15.0,eff:64,diam:103,gab:"5A",mat:"нирезист",minCol:130,maxPwrDir:200,maxPwrSoft:240,l_sec:0.68,stages_per_section:100},
+    {name:"X22ЭЦНКИД5А-200М",q50:200,qmin:130,qmax:270,h_sec:450,n100:17.0,eff:66,diam:103,gab:"5A",mat:"нирезист",minCol:130,maxPwrDir:220,maxPwrSoft:260,l_sec:0.77,stages_per_section:100},
+    {name:"X22ЭЦНКИД5А-250",q50:250,qmin:163,qmax:338,h_sec:400,n100:20.0,eff:68,diam:103,gab:"5A",mat:"нирезист",minCol:130,maxPwrDir:250,maxPwrSoft:300,l_sec:0.90,stages_per_section:100},
+    {name:"X22ЭЦНКИД5А-250М",q50:250,qmin:163,qmax:338,h_sec:420,n100:21.0,eff:68,diam:103,gab:"5A",mat:"нирезист",minCol:130,maxPwrDir:250,maxPwrSoft:300,l_sec:0.95,stages_per_section:100},
+    {name:"X22ЭЦНКИД5А-280М",q50:280,qmin:182,qmax:378,h_sec:380,n100:23.0,eff:70,diam:103,gab:"5A",mat:"нирезист",minCol:130,maxPwrDir:270,maxPwrSoft:320,l_sec:1.04,stages_per_section:100},
+    {name:"X22ЭЦНКИД5А-320",q50:320,qmin:208,qmax:432,h_sec:350,n100:25.0,eff:72,diam:103,gab:"5A",mat:"нирезист",minCol:130,maxPwrDir:280,maxPwrSoft:340,l_sec:1.13,stages_per_section:100},
+    {name:"X22ЭЦНКИД5А-360",q50:360,qmin:234,qmax:486,h_sec:310,n100:28.0,eff:73,diam:103,gab:"5A",mat:"нирезист",minCol:130,maxPwrDir:300,maxPwrSoft:360,l_sec:1.26,stages_per_section:100},
+    {name:"X22ЭЦНКИД5А-400",q50:400,qmin:260,qmax:540,h_sec:290,n100:30.0,eff:74,diam:103,gab:"5A",mat:"нирезист",minCol:130,maxPwrDir:320,maxPwrSoft:380,l_sec:1.35,stages_per_section:100},
+    {name:"X22ЭЦНКИД5А-400М",q50:400,qmin:260,qmax:540,h_sec:300,n100:32.0,eff:74,diam:103,gab:"5A",mat:"нирезист",minCol:130,maxPwrDir:320,maxPwrSoft:380,l_sec:1.44,stages_per_section:100},
+    {name:"X22ЭЦНКИД5А-500",q50:500,qmin:325,qmax:675,h_sec:250,n100:35.0,eff:76,diam:103,gab:"5A",mat:"нирезист",minCol:130,maxPwrDir:360,maxPwrSoft:420,l_sec:1.58,stages_per_section:100},
+    {name:"X22ЭЦНКИД5А-500М",q50:500,qmin:325,qmax:675,h_sec:260,n100:38.0,eff:76,diam:103,gab:"5A",mat:"нирезист",minCol:130,maxPwrDir:360,maxPwrSoft:420,l_sec:1.71,stages_per_section:100},
+    {name:"X22ЭЦНКИС5А-700",q50:700,qmin:455,qmax:945,h_sec:200,n100:45.0,eff:78,diam:103,gab:"5A",mat:"нирезист",minCol:130,maxPwrDir:400,maxPwrSoft:480,l_sec:2.03,stages_per_section:100},
+    {name:"X22ЭЦНКИС5А-800",q50:800,qmin:520,qmax:1080,h_sec:170,n100:50.0,eff:79,diam:103,gab:"5A",mat:"нирезист",minCol:130,maxPwrDir:450,maxPwrSoft:520,l_sec:2.25,stages_per_section:100},
+    // 5А ПКМ
+    {name:"X22ПЭЦНКИД5А-35И",q50:35,qmin:23,qmax:49,h_sec:1050,n100:6.0,eff:50,diam:103,gab:"5A",mat:"ПКМ",minCol:130,maxPwrDir:130,maxPwrSoft:160,l_sec:0.27,stages_per_section:100},
+    {name:"X22ПЭЦНКИД5А-60И",q50:60,qmin:40,qmax:82,h_sec:840,n100:9.0,eff:56,diam:103,gab:"5A",mat:"ПКМ",minCol:130,maxPwrDir:150,maxPwrSoft:180,l_sec:0.41,stages_per_section:100},
+    {name:"X22ПЭЦНКИ5А-160М",q50:160,qmin:104,qmax:216,h_sec:520,n100:15.0,eff:64,diam:103,gab:"5A",mat:"ПКМ",minCol:130,maxPwrDir:200,maxPwrSoft:240,l_sec:0.68,stages_per_section:100},
+    {name:"X22ПЭЦНКИ5А-250",q50:250,qmin:163,qmax:338,h_sec:400,n100:20.0,eff:68,diam:103,gab:"5A",mat:"ПКМ",minCol:130,maxPwrDir:250,maxPwrSoft:300,l_sec:0.90,stages_per_section:100},
+    {name:"X22ПЭЦНКИД5А-400",q50:400,qmin:260,qmax:540,h_sec:290,n100:30.0,eff:74,diam:103,gab:"5A",mat:"ПКМ",minCol:130,maxPwrDir:320,maxPwrSoft:380,l_sec:1.35,stages_per_section:100},
+    // 6 нирезист
+    {name:"X22ЭЦНКИС6-1000",q50:1000,qmin:650,qmax:1350,h_sec:160,n100:190,eff:58,diam:114,gab:"6",mat:"нирезист",minCol:168,maxPwrDir:500,maxPwrSoft:600,l_sec:8.55,stages_per_section:100},
+    {name:"X22ЭЦНКИС6-1250",q50:1250,qmin:812,qmax:1688,h_sec:130,n100:220,eff:58,diam:114,gab:"6",mat:"нирезист",minCol:168,maxPwrDir:600,maxPwrSoft:720,l_sec:9.90,stages_per_section:100},
+    // 7А нирезист
+    {name:"X22ЭЦНКИС7А-1000",q50:1000,qmin:650,qmax:1350,h_sec:180,n100:210,eff:59,diam:136,gab:"7A",mat:"нирезист",minCol:178,maxPwrDir:600,maxPwrSoft:720,l_sec:9.45,stages_per_section:100},
+    {name:"X22ЭЦНКИС7А-1500",q50:1500,qmin:975,qmax:2025,h_sec:140,n100:290,eff:59,diam:136,gab:"7A",mat:"нирезист",minCol:178,maxPwrDir:700,maxPwrSoft:840,l_sec:13.05,stages_per_section:100},
+    {name:"X22ЭЦНКИС7А-1600",q50:1600,qmin:1040,qmax:2160,h_sec:130,n100:305,eff:59,diam:136,gab:"7A",mat:"нирезист",minCol:178,maxPwrDir:750,maxPwrSoft:900,l_sec:13.73,stages_per_section:100},
+    {name:"ВН5-50-1500",type:"винтовой",q50:50,qmin:20,qmax:70,h_sec:1500,n100:15.0,eff:65,diam:102,gab:"5A",mat:"винт",minCol:130,maxPwrDir:100,maxPwrSoft:140,l_sec:0.68,stages_per_section:100}
   ],
-  "motors": [
-    {"name":"ПЭД8-103В5","power":8,"diam":103,"type":"пэд","sections":1},
-    {"name":"ПЭД12-103В5","power":12,"diam":103,"type":"пэд","sections":1},
-    {"name":"ПЭД14-103В5","power":14,"diam":103,"type":"пэд","sections":1},
-    {"name":"ПЭД16-103В5","power":16,"diam":103,"type":"пэд","sections":1},
-    {"name":"ПЭД22-103В5","power":22,"diam":103,"type":"пэд","sections":1},
-    {"name":"ПЭД32-103В5","power":32,"diam":103,"type":"пэд","sections":1},
-    {"name":"ПЭД45-103В5","power":45,"diam":103,"type":"пэд","sections":1},
-    {"name":"ПЭД63-103В5","power":63,"diam":103,"type":"пэд","sections":1},
-    {"name":"ПЭД80-103В5","power":80,"diam":103,"type":"пэд","sections":1},
-    {"name":"ПЭДС90-103В5","power":90,"diam":103,"type":"пэд","sections":2},
-    {"name":"ПЭДС125-103В5","power":125,"diam":103,"type":"пэд","sections":2},
-    {"name":"ПЭДС160-103В5","power":160,"diam":103,"type":"пэд","sections":2},
-    {"name":"ПЭДС210-103В5","power":210,"diam":103,"type":"пэд","sections":3},
-    {"name":"ПЭД8-117В5","power":8,"diam":117,"type":"пэд","sections":1},
-    {"name":"ПЭД16-117В5","power":16,"diam":117,"type":"пэд","sections":1},
-    {"name":"ПЭД22-117В5","power":22,"diam":117,"type":"пэд","sections":1},
-    {"name":"ПЭД32-117В5","power":32,"diam":117,"type":"пэд","sections":1},
-    {"name":"ПЭД45-117В5","power":45,"diam":117,"type":"пэд","sections":1},
-    {"name":"ПЭД63-117В5","power":63,"diam":117,"type":"пэд","sections":1},
-    {"name":"ПЭД80-117В5","power":80,"diam":117,"type":"пэд","sections":1},
-    {"name":"ПЭД100-117В5","power":100,"diam":117,"type":"пэд","sections":1},
-    {"name":"ПЭДС90-117В5","power":90,"diam":117,"type":"пэд","sections":2},
-    {"name":"ПЭДС125-117В5","power":125,"diam":117,"type":"пэд","sections":2},
-    {"name":"ПЭДС180-117В5","power":180,"diam":117,"type":"пэд","sections":2},
-    {"name":"ПЭДС250-117В5","power":250,"diam":117,"type":"пэд","sections":3},
-    {"name":"ПЭДС360-117В5","power":360,"diam":117,"type":"пэд","sections":3},
-    {"name":"ПЭД16-130В5","power":16,"diam":130,"type":"пэд","sections":1},
-    {"name":"ПЭД22-130В5","power":22,"diam":130,"type":"пэд","sections":1},
-    {"name":"ПЭД32-130В5","power":32,"diam":130,"type":"пэд","sections":1},
-    {"name":"ПЭД45-130В5","power":45,"diam":130,"type":"пэд","sections":1},
-    {"name":"ПЭД63-130В5","power":63,"diam":130,"type":"пэд","sections":1},
-    {"name":"ПЭД80-130В5","power":80,"diam":130,"type":"пэд","sections":1},
-    {"name":"ПЭД100-130В5","power":100,"diam":130,"type":"пэд","sections":1},
-    {"name":"ПЭД125-130В5","power":125,"diam":130,"type":"пэд","sections":1},
-    {"name":"ПЭД160-130В5","power":160,"diam":130,"type":"пэд","sections":1},
-    {"name":"ПЭД180-130В5","power":180,"diam":130,"type":"пэд","sections":1},
-    {"name":"ПЭДС200-130В5","power":200,"diam":130,"type":"пэд","sections":2},
-    {"name":"ПЭДС250-130В5","power":250,"diam":130,"type":"пэд","sections":2},
-    {"name":"ПЭДС360-130В5","power":360,"diam":130,"type":"пэд","sections":3},
-    {"name":"ПЭДС500-130В5","power":500,"diam":130,"type":"пэд","sections":3},
-    {"name":"ПЭД32-143В5","power":32,"diam":143,"type":"пэд","sections":1},
-    {"name":"ПЭД63-143В5","power":63,"diam":143,"type":"пэд","sections":1},
-    {"name":"ПЭД100-143В5","power":100,"diam":143,"type":"пэд","sections":1},
-    {"name":"ПЭД160-143В5","power":160,"diam":143,"type":"пэд","sections":1},
-    {"name":"ПЭД220-143В5","power":220,"diam":143,"type":"пэд","sections":1},
-    {"name":"ПЭДС260-143В5","power":260,"diam":143,"type":"пэд","sections":2},
-    {"name":"ПЭДС400-143В5","power":400,"diam":143,"type":"пэд","sections":3},
-    {"name":"ПЭДС555-143В5","power":555,"diam":143,"type":"пэд","sections":3},
-    {"name":"ВПЭД18-117","power":18,"diam":117,"type":"впэд","sections":1},
-    {"name":"ВПЭД27-117","power":27,"diam":117,"type":"впэд","sections":1},
-    {"name":"ВПЭД45-117","power":45,"diam":117,"type":"впэд","sections":1},
-    {"name":"ВПЭД60-117","power":60,"diam":117,"type":"впэд","sections":1},
-    {"name":"ВПЭД80-117","power":80,"diam":117,"type":"впэд","sections":1},
-    {"name":"ВПЭД100-117","power":100,"diam":117,"type":"впэд","sections":1},
-    {"name":"ВПЭД140-117","power":140,"diam":117,"type":"впэд","sections":1},
-    {"name":"ВПЭД250-117","power":250,"diam":117,"type":"впэд","sections":1},
-    {"name":"ВПЭДГ14-81","power":14,"diam":81,"type":"впэд","sections":1},
-    {"name":"ВПЭДГ28-81","power":28,"diam":81,"type":"впэд","sections":1},
-    {"name":"ВПЭДГ40-81","power":40,"diam":81,"type":"впэд","sections":1},
-    {"name":"ВПЭДГ55-81","power":55,"diam":81,"type":"впэд","sections":1},
-    {"name":"ВПЭДГ70-81","power":70,"diam":81,"type":"впэд","sections":1}
+  motors: [
+    {name:"ПЭД8-103В5",power:8,diam:103,type:"пэд",sections:1,temp_max:130,eff_m:0.82,len:4.5},
+    {name:"ПЭД12-103В5",power:12,diam:103,type:"пэд",sections:1,temp_max:130,eff_m:0.83,len:5.0},
+    {name:"ПЭД14-103В5",power:14,diam:103,type:"пэд",sections:1,temp_max:130,eff_m:0.83,len:5.2},
+    {name:"ПЭД16-103В5",power:16,diam:103,type:"пэд",sections:1,temp_max:130,eff_m:0.84,len:5.5},
+    {name:"ПЭД22-103В5",power:22,diam:103,type:"пэд",sections:1,temp_max:130,eff_m:0.85,len:6.0},
+    {name:"ПЭД32-103В5",power:32,diam:103,type:"пэд",sections:1,temp_max:130,eff_m:0.86,len:6.5},
+    {name:"ПЭД45-103В5",power:45,diam:103,type:"пэд",sections:1,temp_max:130,eff_m:0.87,len:7.0},
+    {name:"ПЭД63-103В5",power:63,diam:103,type:"пэд",sections:1,temp_max:130,eff_m:0.88,len:8.0},
+    {name:"ПЭД80-103В5",power:80,diam:103,type:"пэд",sections:1,temp_max:130,eff_m:0.88,len:9.0},
+    {name:"ПЭДС90-103В5",power:90,diam:103,type:"пэд",sections:2,temp_max:130,eff_m:0.88,len:10.0},
+    {name:"ПЭДС125-103В5",power:125,diam:103,type:"пэд",sections:2,temp_max:130,eff_m:0.89,len:11.0},
+    {name:"ПЭДС160-103В5",power:160,diam:103,type:"пэд",sections:2,temp_max:130,eff_m:0.89,len:12.5},
+    {name:"ПЭДС210-103В5",power:210,diam:103,type:"пэд",sections:3,temp_max:130,eff_m:0.90,len:14.0},
+    {name:"ПЭД8-117В5",power:8,diam:117,type:"пэд",sections:1,temp_max:130,eff_m:0.82,len:4.0},
+    {name:"ПЭД16-117В5",power:16,diam:117,type:"пэд",sections:1,temp_max:130,eff_m:0.84,len:5.0},
+    {name:"ПЭД22-117В5",power:22,diam:117,type:"пэд",sections:1,temp_max:130,eff_m:0.85,len:5.5},
+    {name:"ПЭД32-117В5",power:32,diam:117,type:"пэд",sections:1,temp_max:130,eff_m:0.86,len:6.0},
+    {name:"ПЭД45-117В5",power:45,diam:117,type:"пэд",sections:1,temp_max:130,eff_m:0.87,len:6.5},
+    {name:"ПЭД63-117В5",power:63,diam:117,type:"пэд",sections:1,temp_max:130,eff_m:0.88,len:7.5},
+    {name:"ПЭД80-117В5",power:80,diam:117,type:"пэд",sections:1,temp_max:130,eff_m:0.88,len:8.0},
+    {name:"ПЭД100-117В5",power:100,diam:117,type:"пэд",sections:1,temp_max:130,eff_m:0.89,len:9.0},
+    {name:"ПЭДС90-117В5",power:90,diam:117,type:"пэд",sections:2,temp_max:130,eff_m:0.88,len:9.5},
+    {name:"ПЭДС125-117В5",power:125,diam:117,type:"пэд",sections:2,temp_max:130,eff_m:0.89,len:10.5},
+    {name:"ПЭДС180-117В5",power:180,diam:117,type:"пэд",sections:2,temp_max:130,eff_m:0.90,len:12.0},
+    {name:"ПЭДС250-117В5",power:250,diam:117,type:"пэд",sections:3,temp_max:130,eff_m:0.91,len:14.0},
+    {name:"ПЭДС360-117В5",power:360,diam:117,type:"пэд",sections:3,temp_max:130,eff_m:0.91,len:16.0},
+    {name:"ПЭД16-130В5",power:16,diam:130,type:"пэд",sections:1,temp_max:130,eff_m:0.84,len:5.0},
+    {name:"ПЭД22-130В5",power:22,diam:130,type:"пэд",sections:1,temp_max:130,eff_m:0.85,len:5.5},
+    {name:"ПЭД32-130В5",power:32,diam:130,type:"пэд",sections:1,temp_max:130,eff_m:0.86,len:6.0},
+    {name:"ПЭД45-130В5",power:45,diam:130,type:"пэд",sections:1,temp_max:130,eff_m:0.87,len:6.5},
+    {name:"ПЭД63-130В5",power:63,diam:130,type:"пэд",sections:1,temp_max:130,eff_m:0.88,len:7.5},
+    {name:"ПЭД80-130В5",power:80,diam:130,type:"пэд",sections:1,temp_max:130,eff_m:0.88,len:8.0},
+    {name:"ПЭД100-130В5",power:100,diam:130,type:"пэд",sections:1,temp_max:130,eff_m:0.89,len:9.0},
+    {name:"ПЭД125-130В5",power:125,diam:130,type:"пэд",sections:1,temp_max:130,eff_m:0.89,len:10.0},
+    {name:"ПЭД160-130В5",power:160,diam:130,type:"пэд",sections:1,temp_max:130,eff_m:0.90,len:11.0},
+    {name:"ПЭД180-130В5",power:180,diam:130,type:"пэд",sections:1,temp_max:130,eff_m:0.90,len:12.0},
+    {name:"ПЭДС200-130В5",power:200,diam:130,type:"пэд",sections:2,temp_max:130,eff_m:0.90,len:13.0},
+    {name:"ПЭДС250-130В5",power:250,diam:130,type:"пэд",sections:2,temp_max:130,eff_m:0.91,len:14.5},
+    {name:"ПЭДС360-130В5",power:360,diam:130,type:"пэд",sections:3,temp_max:130,eff_m:0.92,len:16.5},
+    {name:"ПЭДС500-130В5",power:500,diam:130,type:"пэд",sections:3,temp_max:130,eff_m:0.92,len:18.0},
+    {name:"ПЭД32-143В5",power:32,diam:143,type:"пэд",sections:1,temp_max:130,eff_m:0.86,len:6.0},
+    {name:"ПЭД63-143В5",power:63,diam:143,type:"пэд",sections:1,temp_max:130,eff_m:0.88,len:7.5},
+    {name:"ПЭД100-143В5",power:100,diam:143,type:"пэд",sections:1,temp_max:130,eff_m:0.89,len:9.0},
+    {name:"ПЭД160-143В5",power:160,diam:143,type:"пэд",sections:1,temp_max:130,eff_m:0.90,len:11.0},
+    {name:"ПЭД220-143В5",power:220,diam:143,type:"пэд",sections:1,temp_max:130,eff_m:0.90,len:13.0},
+    {name:"ПЭДС260-143В5",power:260,diam:143,type:"пэд",sections:2,temp_max:130,eff_m:0.91,len:14.0},
+    {name:"ПЭДС400-143В5",power:400,diam:143,type:"пэд",sections:3,temp_max:130,eff_m:0.92,len:17.0},
+    {name:"ПЭДС555-143В5",power:555,diam:143,type:"пэд",sections:3,temp_max:130,eff_m:0.93,len:19.0},
+    {name:"ВПЭД18-117",power:18,diam:117,type:"впэд",sections:1,temp_max:230,eff_m:0.88,len:4.5},
+    {name:"ВПЭД27-117",power:27,diam:117,type:"впэд",sections:1,temp_max:230,eff_m:0.89,len:5.0},
+    {name:"ВПЭД45-117",power:45,diam:117,type:"впэд",sections:1,temp_max:230,eff_m:0.90,len:6.0},
+    {name:"ВПЭД60-117",power:60,diam:117,type:"впэд",sections:1,temp_max:230,eff_m:0.91,len:7.0},
+    {name:"ВПЭД80-117",power:80,diam:117,type:"впэд",sections:1,temp_max:230,eff_m:0.92,len:8.0},
+    {name:"ВПЭД100-117",power:100,diam:117,type:"впэд",sections:1,temp_max:230,eff_m:0.93,len:9.0},
+    {name:"ВПЭД140-117",power:140,diam:117,type:"впэд",sections:1,temp_max:230,eff_m:0.93,len:10.0},
+    {name:"ВПЭД250-117",power:250,diam:117,type:"впэд",sections:1,temp_max:230,eff_m:0.94,len:12.0},
+    {name:"ВПЭДГ14-81",power:14,diam:81,type:"впэд",sections:1,temp_max:230,eff_m:0.87,len:4.0},
+    {name:"ВПЭДГ28-81",power:28,diam:81,type:"впэд",sections:1,temp_max:230,eff_m:0.89,len:5.0},
+    {name:"ВПЭДГ40-81",power:40,diam:81,type:"впэд",sections:1,temp_max:230,eff_m:0.90,len:6.0},
+    {name:"ВПЭДГ55-81",power:55,diam:81,type:"впэд",sections:1,temp_max:230,eff_m:0.91,len:7.0},
+    {name:"ВПЭДГ70-81",power:70,diam:81,type:"впэд",sections:1,temp_max:230,eff_m:0.92,len:8.0}
   ],
-  "hydros": [
-    {"name":"ПА92Д","diam":92,"axial_kg":100,"temp":140,"oil":6.0},
-    {"name":"2ПА92Д","diam":92,"axial_kg":950,"temp":140,"oil":6.0},
-    {"name":"3ПА92Д","diam":92,"axial_kg":950,"temp":360,"oil":8.0},
-    {"name":"4ПА92Д","diam":92,"axial_kg":750,"temp":140,"oil":6.0},
-    {"name":"2ПА103Д","diam":103,"axial_kg":1200,"temp":140,"oil":6.0},
-    {"name":"3ПА114Д","diam":114,"axial_kg":1500,"temp":500,"oil":11.0},
-    {"name":"ПАВ92Д","diam":92,"axial_kg":360,"temp":360,"oil":6.0},
-    {"name":"ПАД92","diam":92,"axial_kg":360,"temp":360,"oil":2.5}
-  ],
-  "gasSeps": [
-    {"name":"Г2ГИ-5-250","maxQ":250,"gab":"5"},
-    {"name":"Г2ВИК-5А-250Э","maxQ":250,"gab":"5A"},
-    {"name":"Г2ГИК-5А-500МЭ/КП","maxQ":500,"gab":"5A"},
-    {"name":"ГД2ГИ-5-250","maxQ":250,"gab":"5","type":"диспергатор"},
-    {"name":"ГД2ВИК-5А-250Э","maxQ":250,"gab":"5A","type":"диспергатор"},
-    {"name":"ГД2ГИК-5А-500МЭ/КП","maxQ":500,"gab":"5A","type":"диспергатор"}
+  hydros: [
+    {name:"ПА92Д",diam:92,axial_kg:100,temp:140,oil:6.0},
+    {name:"2ПА92Д",diam:92,axial_kg:950,temp:140,oil:6.0},
+    {name:"3ПА92Д",diam:92,axial_kg:950,temp:360,oil:8.0},
+    {name:"4ПА92Д",diam:92,axial_kg:750,temp:140,oil:6.0},
+    {name:"2ПА103Д",diam:103,axial_kg:1200,temp:140,oil:6.0},
+    {name:"3ПА114Д",diam:114,axial_kg:1500,temp:500,oil:11.0},
+    {name:"ПАВ92Д",diam:92,axial_kg:360,temp:360,oil:6.0},
+    {name:"ПАД92",diam:92,axial_kg:360,temp:360,oil:2.5}
   ]
 };
 
-// ═══════════════════════════════════════════
-// ВСПОМОГАТЕЛЬНЫЕ КОНСТАНТЫ И ФУНКЦИИ
-// ═══════════════════════════════════════════
-const CAS_MAP = {
-  '2A': ['2A','3'],
-  '3':  ['2A','3'],
-  '5':  ['2A','3','5'],
-  '5A': ['2A','3','5','5A'],
-  '6':  ['2A','3','5','5A','6'],
-  '7A': ['2A','3','5','5A','6','7A'],
-};
-const GAB_TO_PED = {
-  '2A':  [103],
-  '3':   [103],
-  '5':   [103, 117],
-  '5A':  [117, 130],
-  '6':   [130, 143],
-  '7A':  [143],
-};
+// === МАПЫ ===
+const CAS_MAP = {'2A':['2A'],'3':['2A','3'],'5':['2A','3','5'],'5A':['2A','3','5','5A'],'6':['2A','3','5','5A','6'],'7A':['2A','3','5','5A','6','7A']};
+const GAB_TO_PED = {'2A':[103],'3':[103],'5':[103,117],'5A':[117,130],'6':[130,143],'7A':[143]};
 
-function v(id){ return parseFloat(document.getElementById(id)?.value)||0; }
-function vc(id){ return document.getElementById(id)?.value||''; }
+// ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
+function v(id){ const el = document.getElementById(id); return el ? (parseFloat(el.value) || 0) : 0; }
+function vc(id){ return document.getElementById(id)?.value || ''; }
+function toggleAutoH(){ document.getElementById('auto_h_fields').style.display = document.getElementById('auto_h').checked ? 'block':'none'; }
+function toggleTheme(){ document.body.classList.toggle('dark'); }
+function autoRecalc() { if (document.getElementById('auto_h').checked) selectESP(); }
 
-function toggleAutoH(){
-  document.getElementById('auto_h_fields').style.display =
-    document.getElementById('auto_h').checked ? 'block' : 'none';
-}
+['s_freq','s_L','s_ndin','s_pbuf','s_pzatr','s_reserve','s_rho','s_wc','s_gor','s_pb','s_temp','s_visc'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', () => { if (document.getElementById('auto_h').checked || id === 's_freq') selectESP(); });
+});
 
-function calcH(){
-  const L=v('s_L'), Ndin=v('s_ndin'), Pbuf=v('s_pbuf')||5, Pzatr=v('s_pzatr')||1;
-  const rho=v('s_rho')||900, reserve=(v('s_reserve')||10)/100;
-  if(!L||!Ndin) return 0;
-  const hLiq = L - Ndin;
-  const pDiff = (Pbuf - Pzatr) * 100000 / (rho * 9.81);
-  return Math.round((hLiq + pDiff) * (1 + reserve));
-}
+document.getElementById('s_exec')?.addEventListener('change', () => selectESP());
+document.getElementById('s_cas')?.addEventListener('change', () => selectESP());
 
-function estimateViscosity(temp, rho) {
-  const T = temp + 273.15;
-  return parseFloat((Math.exp(-12.32 + 5164/T) * Math.exp((rho-850)/100)).toFixed(1));
-}
-
-// Исправленная коррекция на вязкость: пороги Re сдвинуты для большей реалистичности
-function correctForViscosity(Q, H, eff, viscosity) {
-  if (viscosity <= 5) return { Q, H, eff };
-  // Используем характерную скорость и диаметр ~100 мм для оценки Re
-  const D = 0.1; // м
-  const A = Math.PI * (D/2)**2;
-  const v = (Q / 86400) / A; // м/с
-  const Re = (v * D * 1000) / (viscosity * 1e-6); // перевод сП -> Па·с: 1 сП = 0.001 Па·с
-  let kQ=1, kH=1, kEff=1;
-  if (Re < 2000) { kQ=0.65; kH=0.75; kEff=0.55; }
-  else if (Re < 10000) { kQ=0.90; kH=0.92; kEff=0.88; }
-  return { Q: Q*kQ, H: H*kH, eff: eff*kEff };
-}
-
-function pickMotor(pumpPowerKw, gabPump, freq, motorPreference) {
-  const allowedD = GAB_TO_PED[gabPump] || [103,117];
-  const isVent = (freq < 35 && motorPreference !== 'пэд') || motorPreference === 'впэд';
-  let candidates = CATALOG.motors.filter(m =>
-    allowedD.includes(m.diam) &&
-    ((isVent && m.type==='впэд') || (!isVent && m.type==='пэд')) &&
-    m.power >= pumpPowerKw * 1.15
-  );
-  if (!candidates.length && !isVent)
-    candidates = CATALOG.motors.filter(m => allowedD.includes(m.diam) && m.type==='впэд' && m.power >= pumpPowerKw * 1.15);
-  candidates.sort((a,b) => a.power - b.power);
-  return candidates[0] || null;
-}
-
-function pickHydro(pumpPowerKw, gabPump) {
-  const axial = pumpPowerKw * 145;
-  return CATALOG.hydros
-    .filter(h => h.axial_kg >= axial)
-    .sort((a,b) => a.axial_kg - b.axial_kg)[0] || null;
-}
-
-function pickGasSep(gor, q, gab) {
-  if (!gor || gor < 10) return null;
-  return CATALOG.gasSeps
-    .filter(s => s.maxQ >= q && s.gab === gab)
-    .sort((a,b) => a.maxQ - b.maxQ)[0] || null;
-}
-
-// ═══════════════════════════════════════════
-//  ПОЛНОСТЬЮ ПЕРЕРАБОТАННАЯ ФУНКЦИЯ ОТРИСОВКИ ГРАФИКОВ
-// ═══════════════════════════════════════════
-function drawPumpGraph(canvas, pCorr, Q50target, H50target, k, mode = 'head', tooltipDiv) {
-  const ctx = canvas.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = canvas.clientWidth * dpr;
-  canvas.height = canvas.clientHeight * dpr;
-  ctx.scale(dpr, dpr);
-  const w = canvas.clientWidth;
-  const h = canvas.clientHeight;
-  const pad = { top: 20, right: 25, bottom: 30, left: 55 };
-  const pw = w - pad.left - pad.right;
-  const ph = h - pad.top - pad.bottom;
-
-  const rho = parseFloat(document.getElementById('s_rho')?.value || 900);
-  const gConst = 9.81;
-
-  const curves = buildCurves(pCorr, k, rho, gConst);
-
-  let yMax, getY, yLabel, curveColor = '#0071e3';
-  switch (mode) {
-    case 'head':
-      yMax = curves.head.max * 1.1;
-      getY = (q) => curves.head.at(q);
-      yLabel = 'Напор, м';
-      break;
-    case 'power':
-      yMax = Math.ceil(curves.power.max * 1.2 / 5) * 5;
-      getY = (q) => curves.power.at(q);
-      yLabel = 'Мощность, кВт';
-      curveColor = '#ff9500';
-      break;
-    case 'eff':
-      yMax = 105;
-      getY = (q) => curves.eff.at(q) * 100;
-      yLabel = 'КПД, %';
-      curveColor = '#34c759';
-      break;
-    default: yMax = curves.head.max; getY = (q) => curves.head.at(q);
-  }
-
-  const xToQ = (x) => pCorr.qmin + (x / pw) * (pCorr.qmax - pCorr.qmin);
-  const qToX = (q) => ((q - pCorr.qmin) / (pCorr.qmax - pCorr.qmin)) * pw;
-  const valToY = (val) => ph * (1 - val / yMax);
-  const yToVal = (y) => (1 - y / ph) * yMax;
-
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, w, h);
-
-  if (mode === 'head') {
-    const xRecL = qToX(pCorr.q50 * 0.7);
-    const xRecR = qToX(pCorr.q50 * 1.2);
-    ctx.fillStyle = 'rgba(52,199,89,0.12)';
-    ctx.fillRect(xRecL, 0, xRecR - xRecL, ph);
-    ctx.fillStyle = 'rgba(255,149,0,0.08)';
-    ctx.fillRect(qToX(pCorr.qmin), 0, xRecL - qToX(pCorr.qmin), ph);
-    ctx.fillRect(xRecR, 0, qToX(pCorr.qmax) - xRecR, ph);
-  }
-
-  ctx.save();
-  ctx.translate(pad.left, pad.top);
-  drawGrid(ctx, pw, ph, 5, yMax, xToQ, valToY, qToX, pCorr.qmin, pCorr.qmax, yLabel);
-
-  ctx.beginPath();
-  ctx.strokeStyle = curveColor;
-  ctx.lineWidth = 2.5;
-  const steps = 100;
-  let first = true;
-  for (let i = 0; i <= steps; i++) {
-    const q = pCorr.qmin + (i / steps) * (pCorr.qmax - pCorr.qmin);
-    const val = getY(q);
-    if (isNaN(val)) continue;
-    const cx = qToX(q);
-    const cy = valToY(val);
-    if (first) { ctx.moveTo(cx, cy); first = false; }
-    else ctx.lineTo(cx, cy);
-  }
-  ctx.stroke();
-
-  if (mode === 'head' && H50target > 0) {
-    ctx.beginPath();
-    ctx.strokeStyle = '#0071e3';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([5, 3]);
-    const yHreq = valToY(H50target);
-    ctx.moveTo(0, yHreq); ctx.lineTo(pw, yHreq);
-    ctx.stroke();
-    ctx.setLineDash([]);
-  }
-
-  if (mode === 'power' && pCorr.maxPwrDir) {
-    const maxPwr = pCorr.maxPwrDir;
-    ctx.beginPath();
-    ctx.strokeStyle = '#ff3b30';
-    ctx.lineWidth = 1.2;
-    ctx.setLineDash([3, 3]);
-    const yP = valToY(maxPwr);
-    ctx.moveTo(0, yP); ctx.lineTo(pw, yP);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = '#ff3b30';
-    ctx.font = '9px -apple-system, sans-serif';
-    ctx.textAlign = 'right';
-    ctx.fillText(`max ${maxPwr} кВт`, pw - 5, yP - 4);
-  }
-
-  const nomX = qToX(pCorr.q50);
-  const nomY = valToY(getY(pCorr.q50));
-  drawMarker(ctx, nomX, nomY, '#aeaeb2', '#fff', 4);
-
-  let targetQ = Q50target;
-  if (targetQ < pCorr.qmin) targetQ = pCorr.qmin;
-  if (targetQ > pCorr.qmax) targetQ = pCorr.qmax;
-  const targetH = getY(targetQ);
-  let targetX = qToX(targetQ);
-  let targetY = valToY(targetH);
-  drawMarker(ctx, targetX, targetY, '#ff9500', '#fff', 6);
-
-  ctx.restore();
-
-  canvas._drawData = {
-    pad, pw, ph, pCorr, curves, k, rho, gConst,
-    xToQ, qToX, valToY, yToVal,
-    getY, yMax, mode,
-    H50target, Q50target: targetQ,
-    targetX, targetY,
-    tooltipDiv
+function validateAllFields() {
+  const setMsg = (id, text, isError = false) => {
+    const el = document.getElementById('val_' + id);
+    if (el) { el.textContent = text; el.className = 'validation-msg' + (isError ? ' error' : ''); }
   };
+  const rho = v('s_rho'), gor = v('s_gor'), pbuf = v('s_pbuf'), L = v('s_L'), ndin = v('s_ndin'), q = v('s_q'), h = v('s_h');
+  if (rho > 0 && rho < 600) setMsg('s_rho', 'Вероятно, нефть, ρ ~ 800-950 кг/м³');
+  else if (rho > 2000) setMsg('s_rho', 'Слишком высокая плотность, проверьте значение');
+  else setMsg('s_rho', '');
+  if (gor > 500) setMsg('s_gor', 'Возможно, требуется газосепаратор');
+  else setMsg('s_gor', '');
+  if (pbuf > 0 && pbuf < 5) setMsg('s_pbuf', 'Низкое буферное давление (< 0.5 МПа)');
+  else setMsg('s_pbuf', '');
+  if (L > 0 && ndin > 0 && ndin >= L) setMsg('s_ndin', 'Динамический уровень не может быть больше глубины спуска!', true);
+  else setMsg('s_ndin', '');
+  if (q <= 0) setMsg('s_q', 'Задайте дебит', true); else setMsg('s_q', '');
+  if (h <= 0 && !document.getElementById('auto_h').checked) setMsg('s_h', 'Задайте напор или включите авторасчёт', true); else setMsg('s_h', '');
+}
+document.querySelectorAll('input[type=number]').forEach(inp => inp.addEventListener('input', validateAllFields));
+validateAllFields();
 
-  if (!canvas._eventsSet) {
-    canvas._eventsSet = true;
+// ==================== СОХРАНЕНИЕ / ЗАГРУЗКА ====================
+function saveConfig() {
+  const fields = ['s_q','s_h','s_cas','s_rho','s_visc','s_temp','s_wc','s_gor','s_pb','s_freq','s_exec','s_gas_sep','s_L','s_ndin','s_pbuf','s_pzatr','s_reserve','auto_h'];
+  const data = {};
+  fields.forEach(id => { const el = document.getElementById(id); if (el) data[id] = el.type === 'checkbox' ? el.checked : el.value; });
+  localStorage.setItem('esp_config', JSON.stringify(data));
+  alert('Конфигурация сохранена');
+}
+function loadConfig() {
+  try {
+    const saved = localStorage.getItem('esp_config');
+    if (!saved) { alert('Нет сохранённой конфигурации'); return; }
+    const data = JSON.parse(saved);
+    Object.keys(data).forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { if (el.type === 'checkbox') el.checked = data[id]; else el.value = data[id]; }
+    });
+    toggleAutoH(); validateAllFields();
+    alert('Конфигурация загружена');
+  } catch (e) { alert('Ошибка загрузки: ' + e.message); }
+}
+
+// ==================== ФИЗИЧЕСКИЕ РАСЧЁТЫ ====================
+function correctForViscosity(Q, H, eff, visc, rho) {
+  if (visc <= 1.1) return { Q, H, eff };
+  const D = 0.1, A = Math.PI * (D / 2) ** 2, v_ = (Q / 86400) / A;
+  const Re = (rho * v_ * D) / (visc * 0.001);
+  let kQ = 1, kH = 1, kEff = 1;
+  if (Re < 2000) { kQ = 0.65; kH = 0.75; kEff = 0.55; }
+  else if (Re < 10000) { kQ = 0.90; kH = 0.92; kEff = 0.88; }
+  return { Q: Q * kQ, H: H * kH, eff: eff * kEff };
+}
+
+function pickMotor(pumpPowerKw, gabPump, freq) {
+  const allowedD = GAB_TO_PED[gabPump] || [103, 117];
+  const asyncRange = [40, 60];
+  const ventRange = [35, 200];
+  let candidates = [];
+  let selectedType = null;
+
+  if (freq <= 60) {
+    // стандартный режим – только асинхронные
+    candidates = CATALOG.motors.filter(m => allowedD.includes(m.diam) && m.type === 'пэд' && m.power >= pumpPowerKw * 1.15);
+    if (candidates.length) selectedType = 'пэд';
+  } else {
+    // высокооборотный режим – только вентильные
+    candidates = CATALOG.motors.filter(m => allowedD.includes(m.diam) && m.type === 'впэд' && m.power >= pumpPowerKw * 1.15);
+    if (candidates.length) selectedType = 'впэд';
+  }
+
+  // Если не нашли подходящий тип – возвращаем null и предупреждение
+  if (!selectedType) {
+    const msg = freq > 60 ? 'Нет подходящего вентильного ПЭД для данной частоты.' : 'Нет подходящего асинхронного ПЭД.';
+    return { motor: null, freqWarning: msg };
+  }
+
+  candidates.sort((a, b) => a.power - b.power);
+  const motor = candidates[0];
+  const range = motor.type === 'пэд' ? asyncRange : ventRange;
+  let freqWarning = null;
+  if (freq < range[0] || freq > range[1]) {
+    freqWarning = `Частота ${freq} Гц вне допустимого диапазона для ${motor.type === 'пэд' ? 'асинхронного' : 'вентильного'} ПЭД (${range[0]}-${range[1]} Гц).`;
+  }
+  return { motor, freqWarning };
+}
+
+function pickHydro(pumpPowerKw) { const axial = pumpPowerKw * 145; return CATALOG.hydros.filter(h => h.axial_kg >= axial).sort((a, b) => a.axial_kg - b.axial_kg)[0] || null; }
+
+function calcFreeGasFraction(Q_liq, GOR, p_intake_mPa, p_bubble_mPa, rho_oil=850, T_K=353) {
+  const GOR_vol = GOR * rho_oil / 1000;
+  const R_s = p_intake_mPa > p_bubble_mPa ? GOR_vol : GOR_vol * (p_intake_mPa / p_bubble_mPa);
+  const free_gas_vol = GOR_vol - R_s;
+  const V_gas_surf = free_gas_vol * Q_liq;
+  const p_sc = 0.1, T_sc = 293, Z = 0.9;
+  const V_gas_intake = V_gas_surf * (p_sc / p_intake_mPa) * (T_K / T_sc) * Z;
+  const Q_total = Q_liq + V_gas_intake;
+  return Q_total > 0 ? V_gas_intake / Q_total : 0;
+}
+function gasHeadDerating(free_gas_fraction) {
+  if (free_gas_fraction <= 0.05) return 1.0;
+  if (free_gas_fraction >= 0.35) return 0.1;
+  return 1 - 2.86 * free_gas_fraction + 2.86 * free_gas_fraction * free_gas_fraction;
+}
+
+// ==================== ОСНОВНАЯ ФУНКЦИЯ ПОДБОРА ====================
+let lastFilteredPumps = null;
+let lastBaseParams = {};
+let matchedResults = [];
+
+function selectESP() {
+  let Q = v('s_q');
+  const cas = vc('s_cas'), rho = v('s_rho') || 900, F = v('s_freq') || 50, exec = vc('s_exec'), temp = v('s_temp') || 80;
+  if (F <= 0) { alert('Частота должна быть больше 0'); return; }
+  const viscInput = v('s_visc'), visc = (viscInput > 0) ? viscInput : 1.0;
+  const gor = v('s_gor') || 0, pbubble = v('s_pb') || 10;
+  const gasSepType = vc('s_gas_sep');
+  let H = v('s_h');
+  if (document.getElementById('auto_h').checked) H = calcH();
+  if (Q <= 0 || H <= 0) {
+    document.getElementById('empty_state').style.display = 'flex';
+    document.getElementById('results_content').style.display = 'none';
+    return;
+  }
+  const k = F / 50, rhoK = rho / 1000;
+  const Q50 = Q / k, H50 = H / (k * k);
+  const allowedGab = CAS_MAP[cas] || ['5A'];
+  const L = v('s_L'), Ndin = v('s_ndin');
+
+  let p_intake_mPa = null;
+  if (L && Ndin) p_intake_mPa = ((L - Ndin) * rho * 9.81 / 1e6) + (v('s_pzatr') || 1) * 0.0981;
+  let free_gas_frac = 0, gas_derating = 1.0, gasSepWarning = null;
+  if (gor > 0 && p_intake_mPa && pbubble) {
+    free_gas_frac = calcFreeGasFraction(Q, gor, p_intake_mPa, pbubble, rho, temp + 273);
+    if (gasSepType !== 'none') {
+      if (gasSepType === 'sep') free_gas_frac *= 0.25;
+      else if (gasSepType === 'disp') free_gas_frac *= 0.1;
+    }
+    gas_derating = gasHeadDerating(free_gas_frac);
+  } else if (gasSepType !== 'none') {
+    gasSepWarning = 'Газосепаратор выбран, но недостаточно данных (L, Ндин, ГФ, Рнас). Эффект не учтён.';
+  }
+
+  const highSpeed = F > 60;
+  const asyncKRange = [0.6, 1.2];
+  const ventKRange = [0.7, 2.2];
+  let allowedKRange = highSpeed ? ventKRange : asyncKRange;
+  let freqRangeWarning = null;
+  if (k < allowedKRange[0] || k > allowedKRange[1]) {
+    freqRangeWarning = `Частота ${F} Гц (k=${k.toFixed(2)}) вне допустимого диапазона для ${highSpeed ? 'высокооборотного' : 'стандартного'} режима. Результаты могут быть некорректны.`;
+    allowedKRange = [0.3, 3.0];
+  }
+
+  const baseHash = JSON.stringify({ cas, exec, rho, visc, gor, pbubble, temp, p_intake_mPa, gas_derating, gasSepType, Q, H, k, Q50, H50, allowedGab });
+  if (!lastFilteredPumps || baseHash !== lastBaseParams.hash) {
+    lastFilteredPumps = CATALOG.pumps.map(p => {
+      const vc = correctForViscosity(p.q50, p.h_sec, p.eff, visc, rho);
+      return { ...p, vc, qminCorr: p.qmin * vc.Q / p.q50, qmaxCorr: p.qmax * vc.Q / p.q50, h_secCorr: vc.H * gas_derating, effCorr: vc.eff * gas_derating };
+    }).filter(p => {
+      if (!allowedGab.includes(p.gab)) return false;
+      if (exec === 'pkm' && p.mat !== 'ПКМ') return false;
+      if (exec === 'niresist' && p.mat !== 'нирезист') return false;
+
+      const qAtFreqMin = p.qminCorr * k;
+      const qAtFreqMax = p.qmaxCorr * k;
+      if (Q < qAtFreqMin * 0.75 || Q > qAtFreqMax * 1.25) return false;
+
+      const hAtFreq = p.h_secCorr * k * k;
+      if (!highSpeed && hAtFreq > p.h_sec * 1.5) return false;
+
+      if (k < allowedKRange[0] || k > allowedKRange[1]) return false;
+
+      const nSec = Math.ceil(H / hAtFreq);
+      return nSec <= 20 && nSec >= 1;
+    });
+    lastBaseParams = { hash: baseHash };
+  }
+
+  matchedResults = lastFilteredPumps.map(pump => {
+    const p = pump, vc = p.vc;
+    const effOld = p.eff / 100;
+    const PhOld = p.n100 * effOld;
+    const PhNew = PhOld * (vc.Q / p.q50) * (vc.H / p.h_sec);
+    const n100corr = PhNew / (vc.eff / 100);
+    const pCorr = { ...p, qmin: p.qminCorr * k, qmax: p.qmaxCorr * k, q50: p.q50 * k * vc.Q / p.q50, h_sec: vc.H * gas_derating * k * k, eff: vc.eff * gas_derating, n100: n100corr };
+    const nSec = Math.ceil(H / pCorr.h_sec);
+    const Qreal = pCorr.q50, Hreal = pCorr.h_sec * nSec;
+    const powerPerStage = pCorr.n100 / 100, totalStages = nSec * (p.stages_per_section || 100);
+    const Npump = powerPerStage * totalStages * k * k * k * rhoK;
+    const maxPwr = (F === 50) ? p.maxPwrDir : p.maxPwrSoft;
+    const powerExceeded = Npump > maxPwr;
+    const { motor, freqWarning } = pickMotor(Npump, p.gab, F);
+    const hydro = pickHydro(Npump);
+    const score = Math.min(100, Math.round((Q >= pCorr.qmin && Q <= pCorr.qmax ? 60 : 20) + (30 * (1 - Math.abs(Q - pCorr.q50) / pCorr.q50))));
+    return { p: pCorr, pOrig: p, nSec, Qreal, Hreal, Npump, maxPwr, powerExceeded, motor, hydro, score, free_gas_frac, gasSepType, motorWarning: freqWarning };
+  }).sort((a, b) => b.score - a.score).slice(0, 8);
+
+  const extraWarnings = [];
+  if (gasSepWarning) extraWarnings.push(gasSepWarning);
+  if (highSpeed) extraWarnings.push('Включён высокооборотный режим (вентильный ПЭД, расширенный диапазон).');
+  if (freqRangeWarning) extraWarnings.push(freqRangeWarning);
+  if (F < 35 || F > 200) extraWarnings.push(`Частота ${F} Гц вне допустимых пределов для всех типов ПЭД.`);
+  renderResults(matchedResults, Q, H, F, rho, visc, temp, free_gas_frac, gasSepType, extraWarnings);
+}
+
+function renderResults(matched, Q, H, F, rho, visc, temp, free_gas_frac, gasSepType, extraWarnings = []) {
+  const k = F / 50;
+  const Q50 = Q / k;
+  const H50 = H / (k * k);
+
+  document.getElementById('empty_state').style.display = 'none';
+  document.getElementById('results_content').style.display = 'block';
+  document.getElementById('results_count').textContent = matched.length ? `Показано ${matched.length} вариантов` : 'Нет результатов';
+  document.getElementById('res_title').textContent = matched.length ? `Найдено ${matched.length} вариантов` : 'Нет подходящих насосов';
+  document.getElementById('res_desc').textContent = `Q=${Q.toFixed(0)} м³/сут · H=${H.toFixed(0)} м · F=${F} Гц · ρ=${rho} кг/м³ · μ=${visc.toFixed(1)} сП` + (free_gas_frac>0?` · Газ: ${(free_gas_frac*100).toFixed(1)}%`:'');
+
+  const warnBanner = document.getElementById('warn_banner');
+  const warnText = document.getElementById('warn_text');
+  let warnings = [...extraWarnings];
+  if (visc > 1.1) warnings.push('Учтена поправка на вязкость.');
+  if (free_gas_frac > 0.25) warnings.push(`Высокое газосодержание — рекомендуется газосепаратор.`);
+  if (gasSepType !== 'none' && !extraWarnings.some(w => w.includes('Газосепаратор выбран'))) {
+    warnings.push(`Применён ${gasSepType === 'sep' ? 'газосепаратор' : 'газосепаратор-диспергатор'}.`);
+  }
+  if (matched.length === 0) warnings.push('Ни один насос не подходит.');
+  else {
+    const best = matched[0];
+    if (best.powerExceeded) warnings.push('Превышена допустимая мощность вала.');
+  }
+  matched.forEach(m => { if (m.motorWarning) warnings.push(m.motorWarning); });
+  warnings = [...new Set(warnings)];
+
+  warnBanner.style.display = warnings.length ? 'flex' : 'none';
+  warnText.textContent = warnings.join(' ');
+
+  let summaryHTML = `<div class="sc"><div class="sc-label">Дебит</div><div class="sc-val">${Q.toFixed(0)}<span class="sc-unit"> м³/сут</span></div></div>
+    <div class="sc"><div class="sc-label">Напор</div><div class="sc-val">${H.toFixed(0)}<span class="sc-unit"> м</span></div></div>
+    <div class="sc"><div class="sc-label">Колонна</div><div class="sc-val">${vc('s_cas')}</div></div>
+    <div class="sc"><div class="sc-label">Частота</div><div class="sc-val">${F}<span class="sc-unit"> Гц</span></div></div>
+    <div class="sc"><div class="sc-label">Плотность</div><div class="sc-val">${rho}<span class="sc-unit"> кг/м³</span></div></div>
+    <div class="sc"><div class="sc-label">Вязкость</div><div class="sc-val">${visc.toFixed(1)}<span class="sc-unit"> сП</span></div></div>
+    <div class="sc"><div class="sc-label">Температура</div><div class="sc-val">${temp}<span class="sc-unit"> °C</span></div></div>`;
+  document.getElementById('summary_strip').innerHTML = summaryHTML;
+
+  const list = document.getElementById('pump_list');
+  if (!matched.length) { list.innerHTML = ''; return; }
+  list.innerHTML = matched.map((m, idx) => {
+    const p = m.p, pOrig = m.pOrig, isBest = idx === 0;
+    const qInZone = Q >= p.qmin && Q <= p.qmax, hOk = m.Hreal >= H * 0.95;
+    const powerCls = m.powerExceeded ? 'bad' : 'ok';
+    const matBadge = pOrig.mat === 'ПКМ' ? '<span class="badge info">Колёса ПКМ</span>' : '<span class="badge gray">Нирезист</span>';
+    const motorHtml = m.motor ? `<span class="badge ok">${m.motor.name}</span><span class="badge gray">${m.motor.power} кВт · Ø${m.motor.diam} мм</span>` : '<span class="badge warn">ПЭД не найден</span>';
+    const hydroHtml = m.hydro ? `<span class="badge info">${m.hydro.name}</span><span class="badge gray">пята ${m.hydro.axial_kg} кг</span>` : '<span class="badge warn">—</span>';
+
+    let extraStats = '';
+    if (m.gasSepType && m.gasSepType !== 'none') {
+      extraStats += `<div class="pc-stat"><div class="pcs-label">Газосепаратор</div><div class="pcs-val ok">${m.gasSepType === 'sep' ? 'Сепаратор' : 'Диспергатор'}</div></div>`;
+    }
+    if (m.free_gas_frac > 0.05) {
+      extraStats += `<div class="pc-stat"><div class="pcs-label">Своб. газ</div><div class="pcs-val ${m.free_gas_frac>0.25?'warn':'ok'}">${(m.free_gas_frac*100).toFixed(1)}%</div></div>`;
+    }
+
+    return `<div class="pump-card${isBest ? ' best' : ''}">
+      <input type="checkbox" class="compare-checkbox" data-idx="${idx}" onchange="updateCompareBtn()">
+      <div class="pc-head"><div><div class="pc-title">${pOrig.name}${pOrig.type ? ' (' + pOrig.type + ')' : ''}</div><div class="pc-sub">Габарит ${pOrig.gab} · Ø${pOrig.diam} мм · скв.≥${pOrig.minCol} мм</div></div><div class="pc-score"><div class="pc-score-val">${m.score}</div><div class="pc-score-label">совпадение</div></div></div>
+      <div class="match-bar"><div class="match-fill" style="width:${m.score}%"></div></div>
+      <div class="pc-body">
+        <div class="pc-stat"><div class="pcs-label">Подача (${F} Гц)</div><div class="pcs-val ${qInZone ? 'ok' : 'warn'}">${m.Qreal.toFixed(0)} м³/сут</div></div>
+        <div class="pc-stat"><div class="pcs-label">Зона Q</div><div class="pcs-val">${p.qmin.toFixed(0)}–${p.qmax.toFixed(0)}</div></div>
+        <div class="pc-stat"><div class="pcs-label">Секций</div><div class="pcs-val ok">${m.nSec} секц.</div></div>
+        <div class="pc-stat"><div class="pcs-label">Напор</div><div class="pcs-val ${hOk ? 'ok' : 'bad'}">${m.Hreal.toFixed(0)} м</div></div>
+        <div class="pc-stat"><div class="pcs-label">Мощн. насоса</div><div class="pcs-val ${powerCls}">${m.Npump.toFixed(1)} кВт</div></div>
+        <div class="pc-stat"><div class="pcs-label">КПД ступени</div><div class="pcs-val">${p.eff.toFixed(1)}%</div></div>
+        ${extraStats}
+      </div>
+      <div class="graph-tabs" data-idx="${idx}"><div class="graph-tab active" data-mode="head">Напор</div><div class="graph-tab" data-mode="power">Мощность</div><div class="graph-tab" data-mode="eff">КПД</div><div class="graph-tab" data-mode="zone">Рабочая область</div></div>
+      <div class="graph-container"><canvas id="graph_${idx}"></canvas><div class="graph-tooltip" id="tooltip_${idx}"></div><button class="graph-export-btn" onclick="event.stopPropagation(); exportGraphToPNG(document.getElementById('graph_${idx}'), '${pOrig.name.replace(/'/g, "\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div>
+      <div class="pc-footer">${qInZone && hOk ? '<span class="badge ok">Подходит</span>' : '<span class="badge warn">На границе</span>'} ${matBadge} ${F !== 50 ? `<span class="badge info">ЧРП ${F} Гц</span>` : ''} <span style="font-weight:700;color:var(--text-2);">ПЭД</span> ${motorHtml} <span style="font-weight:700;color:var(--text-2);">Гидрозащита</span> ${hydroHtml}</div>
+    </div>`;
+  }).join('');
+
+  document.querySelectorAll('.graph-tabs').forEach(tabs => {
+    const idx = tabs.dataset.idx, canvas = document.getElementById(`graph_${idx}`), tooltip = document.getElementById(`tooltip_${idx}`);
+    tabs.querySelectorAll('.graph-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.querySelectorAll('.graph-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        drawPumpGraph(canvas, matched[parseInt(idx)].p, Q50, H50, k, tab.dataset.mode, tooltip);
+      });
+    });
+    drawPumpGraph(canvas, matched[parseInt(idx)].p, Q50, H50, k, 'head', tooltip);
+    canvas._recalcCallback = selectESP;
+    canvas._globalK = k;
+    canvas._globalQ50 = Q50;
+    canvas._globalH50 = H50;
     setupCanvasEvents(canvas);
-  }
+  });
+  updateCompareBtn();
 }
 
-function buildCurves(p, k, rho, gConst) {
-  const Qmin = p.qmin;
-  const Qmax = p.qmax;
-  const Q50 = p.q50;
-  const Hmax = p.h_sec;
-
-  const A = -Hmax * 0.25 / ((Q50 - Qmin) * (Q50 - Qmax));
-  const B = -2 * A * Q50;
-  const C_head = Hmax - A * Q50 * Q50 - B * Q50;
-
-  const headAt = (q) => {
-    if (q < Qmin || q > Qmax) return NaN;
-    return A * q * q + B * q + C_head;
-  };
-
-  const effMax = p.eff / 100;
-  const tScale = 1 / (Qmax - Qmin);
-  const effAt = (q) => {
-    const t = (q - Q50) * tScale;
-    return Math.max(0.35, Math.min(effMax, effMax * (1 - 0.35 * t * t)));
-  };
-
-  const powerAt = (q) => {
-    const H = headAt(q);
-    const eff = effAt(q);
-    if (eff <= 0 || isNaN(H)) return 0;
-    return (rho * gConst * q * H) / (3.6e6 * eff);
-  };
-
-  const samples = 100;
-  let maxHead = 0, maxPower = 0;
-  for (let i = 0; i <= samples; i++) {
-    const q = Qmin + (i / samples) * (Qmax - Qmin);
-    const h = headAt(q);
-    if (h > maxHead) maxHead = h;
-    const pw = powerAt(q);
-    if (pw > maxPower) maxPower = pw;
-  }
-
-  return {
-    head: { at: headAt, max: maxHead },
-    power: { at: powerAt, max: maxPower },
-    eff: { at: effAt, max: effMax }
-  };
+function calcH() {
+  const L=v('s_L'),Ndin=v('s_ndin'),Pb=v('s_pbuf')||5,Pz=v('s_pzatr')||1,rho=v('s_rho')||900,reserve=(v('s_reserve')||10)/100;
+  if(!L||!Ndin)return 0;
+  const hLiq=L-Ndin, pDiff=(Pb-Pz)*10.33*(1000/rho);
+  return Math.round((hLiq+pDiff)*(1+reserve));
 }
 
-function drawGrid(ctx, pw, ph, nGrid, yMax, xToQ, valToY, qToX, qMin, qMax, yLabel) {
-  ctx.strokeStyle = '#e5e5ea';
-  ctx.lineWidth = 1;
-  for (let i = 0; i <= nGrid; i++) {
-    const y = (i / nGrid) * ph;
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(pw, y); ctx.stroke();
-  }
-  const qRange = qMax - qMin;
-  const roughStep = qRange / nGrid;
-  const step = niceStep(roughStep);
-  let qTick = Math.ceil(qMin / step) * step;
-  while (qTick <= qMax) {
-    const x = ((qTick - qMin) / qRange) * pw;
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, ph); ctx.stroke();
-    qTick += step;
-  }
-
-  ctx.strokeStyle = '#8e8e93';
-  ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(0, ph); ctx.lineTo(pw, ph); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, ph); ctx.stroke();
-
-  ctx.fillStyle = '#6e6e73';
-  ctx.font = '10px -apple-system, sans-serif';
-  ctx.textAlign = 'center';
-  qTick = Math.ceil(qMin / step) * step;
-  while (qTick <= qMax) {
-    const x = ((qTick - qMin) / qRange) * pw;
-    ctx.fillText(Math.round(qTick), x, ph + 14);
-    qTick += step;
-  }
-  ctx.fillText('Подача, м³/сут', pw / 2, ph + 26);
-
-  ctx.textAlign = 'right';
-  for (let i = 0; i <= nGrid; i++) {
-    const val = (i / nGrid) * yMax;
-    ctx.fillText(val.toFixed(1), -6, ph - (i / nGrid) * ph + 4);
-  }
-  ctx.save();
-  ctx.rotate(-Math.PI / 2);
-  ctx.textAlign = 'center';
-  ctx.fillText(yLabel, -ph / 2, -40);
-  ctx.restore();
+// ==================== ГРАФИКИ ====================
+function buildCurves(p,rho,gConst){
+  const Qmin=p.qmin,Qmax=p.qmax,Q50=p.q50,Hmax=p.h_sec;
+  const A=-Hmax*0.25/((Q50-Qmin)*(Q50-Qmax));
+  const B=-2*A*Q50;
+  const C_head=Hmax-A*Q50*Q50-B*Q50;
+  const headAt=(q)=>(q<Qmin||q>Qmax)?NaN:A*q*q+B*q+C_head;
+  const effMax=p.eff/100;
+  const tScale=1/(Qmax-Qmin);
+  const effAt=(q)=>{ const t=(q-Q50)*tScale; return Math.max(0.35,Math.min(effMax,effMax*(1-0.35*t*t))); };
+  const powerAt=(q)=>{ const H=headAt(q),eff=effAt(q); if(eff<=0||isNaN(H)) return 0; return (rho*gConst*q*H)/(86.4e6*eff); };
+  let maxHead=0,maxPower=0;
+  for(let i=0;i<=100;i++){ const q=Qmin+(i/100)*(Qmax-Qmin); const h=headAt(q); if(h>maxHead)maxHead=h; const pw=powerAt(q); if(pw>maxPower)maxPower=pw; }
+  return {head:{at:headAt,max:maxHead},power:{at:powerAt,max:maxPower},eff:{at:effAt,max:effMax}};
 }
 
-function niceStep(rough) {
-  const magnitude = Math.pow(10, Math.floor(Math.log10(rough)));
-  const residual = rough / magnitude;
-  if (residual <= 1.5) return magnitude;
-  if (residual <= 3) return 2 * magnitude;
-  if (residual <= 7) return 5 * magnitude;
-  return 10 * magnitude;
-}
-
-function drawMarker(ctx, x, y, fill, stroke, r) {
-  ctx.save();
-  ctx.fillStyle = fill;
-  ctx.strokeStyle = stroke;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, 2 * Math.PI);
-  ctx.fill();
+function drawPumpGraph(canvas,pCorr,Q50target,H50target,k,mode,tooltipDiv){
+  const ctx=canvas.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  canvas.width=canvas.clientWidth*dpr; canvas.height=canvas.clientHeight*dpr; ctx.scale(dpr,dpr);
+  const w=canvas.clientWidth,h=canvas.clientHeight;
+  const pad={top:20,right:25,bottom:30,left:55},pw=w-pad.left-pad.right,ph=h-pad.top-pad.bottom;
+  const rho=parseFloat(document.getElementById('s_rho')?.value||900),gConst=9.81;
+  const curves=buildCurves(pCorr,rho,gConst);
+  let yMax,getY,yLabel,curveColor='#0071e3';
+  switch(mode){
+    case 'head':yMax=curves.head.max*1.1;getY=(q)=>curves.head.at(q);yLabel='Напор, м';break;
+    case 'power':yMax=Math.ceil(curves.power.max*1.2/5)*5;getY=(q)=>curves.power.at(q);yLabel='Мощность, кВт';curveColor='#ff9500';break;
+    case 'eff':yMax=105;getY=(q)=>curves.eff.at(q)*100;yLabel='КПД, %';curveColor='#34c759';break;
+    case 'zone':yMax=curves.head.max*1.1;getY=(q)=>curves.head.at(q);yLabel='Напор, м';break;
+    default:yMax=curves.head.max;getY=(q)=>curves.head.at(q);
+  }
+  const xToQ=(x)=>pCorr.qmin+(x/pw)*(pCorr.qmax-pCorr.qmin);
+  const qToX=(q)=>((q-pCorr.qmin)/(pCorr.qmax-pCorr.qmin))*pw;
+  const valToY=(val)=>ph*(1-val/yMax);
+  ctx.fillStyle='#ffffff';ctx.fillRect(0,0,w,h);
+  if(mode==='zone'){
+    ctx.fillStyle='rgba(52,199,89,0.15)';
+    ctx.fillRect(qToX(pCorr.qmin*0.9),0,qToX(pCorr.qmax*1.1)-qToX(pCorr.qmin*0.9),ph);
+  }
+  ctx.save();ctx.translate(pad.left,pad.top);
+  drawGrid(ctx,pw,ph,5,yMax,xToQ,valToY,pCorr.qmin,pCorr.qmax,yLabel);
+  if(mode==='zone'){
+    const x1=qToX(pCorr.qmin),x2=qToX(pCorr.qmax);
+    ctx.fillStyle='rgba(0,113,227,0.08)';
+    ctx.fillRect(x1,0,x2-x1,ph);
+    ctx.strokeStyle='#0071e3';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.moveTo(x1,0);ctx.lineTo(x1,ph);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(x2,0);ctx.lineTo(x2,ph);ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  ctx.beginPath();ctx.strokeStyle=curveColor;ctx.lineWidth=2.5;
+  let first=true;
+  for(let i=0;i<=100;i++){
+    const q=pCorr.qmin+(i/100)*(pCorr.qmax-pCorr.qmin),val=getY(q);
+    if(isNaN(val))continue;
+    const cx=qToX(q),cy=valToY(val);
+    if(first){ctx.moveTo(cx,cy);first=false;}else ctx.lineTo(cx,cy);
+  }
   ctx.stroke();
+  if((mode==='head'||mode==='zone')&&H50target>0){ctx.beginPath();ctx.strokeStyle='#0071e3';ctx.setLineDash([5,3]);const yH=valToY(H50target);ctx.moveTo(0,yH);ctx.lineTo(pw,yH);ctx.stroke();ctx.setLineDash([]);}
+  if(mode==='power'&&pCorr.maxPwrDir){ctx.beginPath();ctx.strokeStyle='#ff3b30';ctx.setLineDash([3,3]);const yP=valToY(pCorr.maxPwrDir);ctx.moveTo(0,yP);ctx.lineTo(pw,yP);ctx.stroke();ctx.setLineDash([]);}
+  const nomX=qToX(pCorr.q50),nomY=valToY(getY(pCorr.q50));
+  drawMarker(ctx,nomX,nomY,'#aeaeb2','#fff',4);
+  let targetQ=Math.min(pCorr.qmax,Math.max(pCorr.qmin,Q50target));
+  const targetY=valToY(getY(targetQ)),targetX=qToX(targetQ);
+  drawMarker(ctx,targetX,targetY,'#ff9500','#fff',6);
   ctx.restore();
+  canvas._drawData={pad,pw,ph,pCorr,curves,k,rho,gConst,xToQ,qToX,valToY,getY,yMax,mode,H50target,Q50target:targetQ,targetX,targetY,tooltipDiv};
 }
 
-function setupCanvasEvents(canvas) {
-  let dragging = false;
+function drawGrid(ctx,pw,ph,nGrid,yMax,xToQ,valToY,qMin,qMax,yLabel){
+  ctx.strokeStyle='#e5e5ea';ctx.lineWidth=1;
+  for(let i=0;i<=nGrid;i++){const y=(i/nGrid)*ph;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(pw,y);ctx.stroke();}
+  const step=niceStep((qMax-qMin)/nGrid);
+  let qTick=Math.ceil(qMin/step)*step;
+  while(qTick<=qMax){const x=((qTick-qMin)/(qMax-qMin))*pw;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,ph);ctx.stroke();qTick+=step;}
+  ctx.strokeStyle='#8e8e93';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,ph);ctx.lineTo(pw,ph);ctx.stroke();ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,ph);ctx.stroke();
+  ctx.fillStyle='#6e6e73';ctx.font='10px -apple-system,sans-serif';ctx.textAlign='center';
+  qTick=Math.ceil(qMin/step)*step;
+  while(qTick<=qMax){ctx.fillText(Math.round(qTick),((qTick-qMin)/(qMax-qMin))*pw,ph+14);qTick+=step;}
+  ctx.fillText('Подача, м³/сут',pw/2,ph+26);
+  ctx.textAlign='right';
+  for(let i=0;i<=nGrid;i++)ctx.fillText(((i/nGrid)*yMax).toFixed(1),-6,ph-(i/nGrid)*ph+4);
+  ctx.save();ctx.rotate(-Math.PI/2);ctx.textAlign='center';ctx.fillText(yLabel,-ph/2,-40);ctx.restore();
+}
+function niceStep(rough){const m=Math.pow(10,Math.floor(Math.log10(rough)));const r=rough/m;if(r<=1.5)return m;if(r<=3)return 2*m;if(r<=7)return 5*m;return 10*m;}
+function drawMarker(ctx,x,y,fill,stroke,r){ctx.save();ctx.fillStyle=fill;ctx.strokeStyle=stroke;ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,r,0,2*Math.PI);ctx.fill();ctx.stroke();ctx.restore();}
 
-  canvas.addEventListener('mousedown', (e) => {
+function setupCanvasEvents(canvas){
+  let dragging = false;
+  let onMove, onUp;
+
+  function handleMouseDown(e) {
     const data = canvas._drawData;
     if (!data) return;
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left - data.pad.left;
     const my = e.clientY - rect.top - data.pad.top;
-
-    const dx = mx - data.targetX;
-    const dy = my - data.targetY;
-    if (Math.sqrt(dx*dx + dy*dy) < 10) {
+    if (Math.hypot(mx - data.targetX, my - data.targetY) < 10) {
       dragging = true;
       canvas.style.cursor = 'grabbing';
       e.preventDefault();
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
     }
-  });
+  }
 
-  window.addEventListener('mousemove', (e) => {
+  onMove = (e) => {
+    if (!dragging) return;
     const data = canvas._drawData;
     if (!data) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left - data.pad.left;
+    let q = Math.min(data.pCorr.qmax, Math.max(data.pCorr.qmin, data.xToQ(mx)));
+    if (!canvas._animFrame) {
+      canvas._animFrame = requestAnimationFrame(() => {
+        const d = canvas._drawData;
+        if (!d) return;
+        d.targetX = d.qToX(q);
+        d.targetY = d.valToY(d.getY(q));
+        d.Q50target = q;
+        drawPumpGraph(canvas, d.pCorr, q, d.H50target, d.k, d.mode, d.tooltipDiv);
+        updateTooltip(d.tooltipDiv, q, d, rect);
+        d.tooltipDiv.classList.add('visible');
+        canvas._animFrame = null;
+      });
+    }
+  };
+
+  onUp = () => {
+    if (dragging) {
+      const data = canvas._drawData;
+      if (data) {
+        const newQ = data.Q50target * (canvas._globalK || 1);
+        document.getElementById('s_q').value = newQ.toFixed(1);
+        selectESP();
+      }
+    }
+    dragging = false;
+    canvas.style.cursor = 'default';
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+  };
+
+  canvas.addEventListener('mousedown', handleMouseDown);
+  canvas.addEventListener('mousemove', (e) => {
+    const data = canvas._drawData;
+    if (!data || dragging) return;
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left - data.pad.left;
     const my = e.clientY - rect.top - data.pad.top;
     const tooltip = data.tooltipDiv;
-
-    if (dragging) {
-      let q = data.xToQ(mx);
-      if (q < data.pCorr.qmin) q = data.pCorr.qmin;
-      if (q > data.pCorr.qmax) q = data.pCorr.qmax;
-      data.targetX = data.qToX(q);
-      data.targetY = data.valToY(data.getY(q));
-      data.Q50target = q;
-
-      drawPumpGraph(canvas, data.pCorr, q, data.H50target, data.k, data.mode, tooltip);
-      updateTooltip(tooltip, q, data, rect);
-      tooltip.classList.add('visible');
-    } else {
-      if (mx < 0 || mx > data.pw || my < 0 || my > data.ph) {
-        tooltip.classList.remove('visible');
-        canvas.style.cursor = 'default';
-        return;
-      }
-      const q = data.xToQ(mx);
-      if (q < data.pCorr.qmin || q > data.pCorr.qmax) {
-        tooltip.classList.remove('visible');
-        canvas.style.cursor = 'default';
-        return;
-      }
-      updateTooltip(tooltip, q, data, rect);
-      tooltip.classList.add('visible');
-
-      const dx = mx - data.targetX;
-      const dy = my - data.targetY;
-      canvas.style.cursor = (Math.sqrt(dx*dx + dy*dy) < 10) ? 'grab' : 'default';
-    }
+    if (mx < 0 || mx > data.pw || my < 0 || my > data.ph) { tooltip.classList.remove('visible'); canvas.style.cursor = 'default'; return; }
+    const q = data.xToQ(mx);
+    if (q < data.pCorr.qmin || q > data.pCorr.qmax) { tooltip.classList.remove('visible'); return; }
+    updateTooltip(tooltip, q, data, rect);
+    tooltip.classList.add('visible');
+    canvas.style.cursor = Math.hypot(mx - data.targetX, my - data.targetY) < 10 ? 'grab' : 'default';
   });
-
-  window.addEventListener('mouseup', () => {
-    if (dragging) {
-      dragging = false;
-      canvas.style.cursor = 'default';
-    }
-  });
-
-  canvas.addEventListener('mouseleave', () => {
-    if (canvas._drawData?.tooltipDiv) canvas._drawData.tooltipDiv.classList.remove('visible');
-    canvas.style.cursor = 'default';
-  });
+  canvas.addEventListener('mouseleave', () => { if (canvas._drawData?.tooltipDiv) canvas._drawData.tooltipDiv.classList.remove('visible'); });
 }
 
-function updateTooltip(div, q, data, rect) {
-  const H = data.curves.head.at(q);
-  const eff = data.curves.eff.at(q) * 100;
-  const N = data.curves.power.at(q);
-  div.innerHTML = `Q: ${q.toFixed(1)} м³/сут<br>H: ${H.toFixed(1)} м<br>N: ${N.toFixed(1)} кВт<br>КПД: ${eff.toFixed(1)}%`;
-  const left = Math.min(data.qToX(q) + data.pad.left + 15, rect.width - 150);
-  const top = Math.min(data.valToY(H) + data.pad.top - 30, rect.height - 60);
-  div.style.left = left + 'px';
-  div.style.top = top + 'px';
+function updateTooltip(div,q,data,rect){
+  const H=data.curves.head.at(q),eff=data.curves.eff.at(q)*100,N=data.curves.power.at(q);
+  div.innerHTML=`Q: ${q.toFixed(1)} м³/сут<br>H: ${H.toFixed(1)} м<br>N: ${N.toFixed(1)} кВт<br>КПД: ${eff.toFixed(1)}%`;
+  const left=Math.min(data.qToX(q)+data.pad.left+15,rect.width-150);
+  const top=Math.min(data.valToY(H)+data.pad.top-30,rect.height-60);
+  div.style.left=left+'px';div.style.top=top+'px';
 }
 
-// Функция экспорта графика в PNG
-function exportGraphToPNG(canvas, pumpName) {
-  const link = document.createElement('a');
-  link.download = `${pumpName.replace(/\s+/g, '_')}_graph.png`;
-  link.href = canvas.toDataURL('image/png');
-  link.click();
+function exportGraphToPNG(canvas,pumpName){const link=document.createElement('a');link.download=`${pumpName.replace(/\s+/g,'_')}_graph.png`;link.href=canvas.toDataURL('image/png');link.click();}
+
+// ==================== СРАВНЕНИЕ ====================
+function updateCompareBtn() {
+  const checked = document.querySelectorAll('.compare-checkbox:checked');
+  document.getElementById('compare_btn').style.display = checked.length >= 2 ? 'inline-block' : 'none';
 }
-
-// ═══════════════════════════════════════════
-// ГЛАВНАЯ ФУНКЦИЯ ПОДБОРА (ИСПРАВЛЕНА)
-// ═══════════════════════════════════════════
-function selectESP() {
-  const Q = v('s_q');
-  const cas = vc('s_cas');
-  const rho = v('s_rho') || 900;
-  const F = v('s_freq') || 50;
-  const exec = vc('s_exec');
-  const temp = v('s_temp') || 80;
-  const viscInput = v('s_visc');
-  const visc = viscInput || estimateViscosity(temp, rho);
-  const gor = v('s_gor') || 0;
-
-  let H = v('s_h');
-  if (document.getElementById('auto_h').checked) H = calcH();
-  if (Q <= 0 || H <= 0) { alert('Задайте дебит и напор'); return; }
-
-  const k = F / 50;
-  const rhoK = rho / 1000;
-  const Q50 = Q / k;
-  const H50 = H / (k * k);
-  const allowedGab = CAS_MAP[cas] || ['5A'];
-
-  const PUMPS = CATALOG.pumps;
-
-  const matched = PUMPS
-    .filter(p => {
-      if (!allowedGab.includes(p.gab)) return false;
-      if (exec === 'pkm'      && p.mat !== 'ПКМ')      return false;
-      if (exec === 'niresist' && p.mat !== 'нирезист') return false;
-      if (Q50 < p.qmin * 0.75 || Q50 > p.qmax * 1.25) return false;
-      const viscCorr = correctForViscosity(p.q50, p.h_sec, p.eff, visc);
-      const nSec = Math.ceil(H50 / viscCorr.H);
-      if (nSec > 20 || nSec < 1) return false;
-      return true;
-    })
-    .map(p => {
-      const viscCorr = correctForViscosity(p.q50, p.h_sec, p.eff, visc);
-
-      // === ИСПРАВЛЕНИЕ: пересчёт мощности секции с учётом нового КПД ===
-      const eff_old = p.eff / 100;
-      const Ph50_old = p.n100 * eff_old; // гидравлическая мощность на исходном КПД
-      const Ph50_new = Ph50_old * (viscCorr.Q / p.q50) * (viscCorr.H / p.h_sec); // с коррекцией Q и H
-      const n100_corrected = Ph50_new / (viscCorr.eff / 100);
-      // ================================================================
-
-      const pCorr = {
-        ...p,
-        qmin: p.qmin * k * viscCorr.Q / p.q50,
-        qmax: p.qmax * k * viscCorr.Q / p.q50,
-        q50: p.q50 * k * viscCorr.Q / p.q50,
-        h_sec: viscCorr.H,
-        eff: viscCorr.eff,
-        n100: n100_corrected,  // используем исправленное значение
-        maxPwrDir: p.maxPwrDir,
-        maxPwrSoft: p.maxPwrSoft
-      };
-      const nSec = Math.ceil(H50 / pCorr.h_sec);
-      const Qreal = pCorr.q50;
-      const Hreal = pCorr.h_sec * nSec;
-      const Npump = pCorr.n100 * nSec * k*k*k * rhoK;
-      const maxPwr = (F === 50) ? p.maxPwrDir : p.maxPwrSoft;
-      const powerExceeded = Npump > maxPwr;
-      const motor = pickMotor(Npump, p.gab, F, powerExceeded ? 'впэд' : undefined);
-      const hydro = pickHydro(Npump, p.gab);
-      const gasSep = pickGasSep(gor, Qreal, p.gab);
-      const score = Math.min(100, Math.round(
-        (Q50 >= p.qmin && Q50 <= p.qmax ? 60 : 20) +
-        (30 * (1 - Math.abs(Q50 - p.q50)/p.q50))
-      ));
-      return { p: pCorr, pOrig: p, nSec, Qreal, Hreal, Npump, maxPwr, powerExceeded, motor, hydro, gasSep, score, viscCorr };
-    })
-    .sort((a,b) => b.score - a.score)
-    .slice(0, 8);
-
-  document.getElementById('empty_state').style.display = 'none';
-  document.getElementById('results_content').style.display = 'block';
-  document.getElementById('res_title').textContent = matched.length
-    ? `Найдено ${matched.length} вариантов`
-    : 'Нет подходящих насосов';
-  document.getElementById('res_desc').textContent =
-    `Q=${Q.toFixed(0)} м³/сут · H=${H.toFixed(0)} м · колонна ${cas} · F=${F} Гц · ρ=${rho} кг/м³ · μ≈${visc.toFixed(1)} сП`;
-
-  document.getElementById('summary_strip').innerHTML = `
-    <div class="sc"><div class="sc-label">Дебит</div><div class="sc-val">${Q.toFixed(0)}<span class="sc-unit"> м³/сут</span></div></div>
-    <div class="sc"><div class="sc-label">Напор</div><div class="sc-val">${H.toFixed(0)}<span class="sc-unit"> м</span></div></div>
-    <div class="sc"><div class="sc-label">Колонна</div><div class="sc-val">${cas}</div></div>
-    <div class="sc"><div class="sc-label">Частота</div><div class="sc-val">${F}<span class="sc-unit"> Гц</span></div></div>
-    <div class="sc"><div class="sc-label">Плотность</div><div class="sc-val">${rho}<span class="sc-unit"> кг/м³</span></div></div>
-    <div class="sc"><div class="sc-label">Вязкость</div><div class="sc-val">${visc.toFixed(1)}<span class="sc-unit"> сП</span></div></div>
-    <div class="sc"><div class="sc-label">Температура</div><div class="sc-val">${temp}<span class="sc-unit"> °C</span></div></div>
-  `;
-
-  const list = document.getElementById('pump_list');
-  if (!matched.length) { list.innerHTML = ''; return; }
-
-  list.innerHTML = matched.map((m, idx) => {
-    const p = m.p, pOrig = m.pOrig;
-    const isBest = idx === 0;
-    const qInZone = Q >= p.qmin && Q <= p.qmax;
-    const hOk = m.Hreal >= H * 0.95;
-    const powerCls = m.powerExceeded ? 'bad' : 'ok';
-    const matBadge = pOrig.mat === 'ПКМ' ? '<span class="badge info">Колёса ПКМ</span>' : '<span class="badge gray">Нирезист</span>';
-    const motorHtml = m.motor
-      ? `<span class="badge ok">${m.motor.name}</span><span class="badge gray">${m.motor.power} кВт · Ø${m.motor.diam} мм</span>`
-      : '<span class="badge warn">ПЭД не найден</span>';
-    const hydroHtml = m.hydro
-      ? `<span class="badge info">${m.hydro.name}</span><span class="badge gray">пята ${m.hydro.axial_kg} кг · масло ${m.hydro.oil} л</span>`
-      : '<span class="badge warn">—</span>';
-    const gasHtml = m.gasSep ? `<span class="badge info">ГС: ${m.gasSep.name}</span>` : '';
-
-    return `<div class="pump-card${isBest ? ' best' : ''}">
-      <div class="pc-head">
-        <div>
-          <div class="pc-title">${pOrig.name}${pOrig.type ? ` (${pOrig.type})` : ''}</div>
-          <div class="pc-sub">Габарит ${pOrig.gab} · Ø${pOrig.diam} мм · скважина ≥${pOrig.minCol} мм</div>
-        </div>
-        <div class="pc-score"><div class="pc-score-val">${m.score}</div><div class="pc-score-label">совпадение</div></div>
-      </div>
-      <div class="match-bar"><div class="match-fill" style="width:${m.score}%"></div></div>
-      <div class="pc-body">
-        <div class="pc-stat"><div class="pcs-label">Подача (${F} Гц)</div><div class="pcs-val ${qInZone?'ok':'warn'}">${m.Qreal.toFixed(0)} м³/сут</div></div>
-        <div class="pc-stat"><div class="pcs-label">Рабочая зона Q</div><div class="pcs-val">${(p.qmin).toFixed(0)}–${(p.qmax).toFixed(0)} м³/сут</div></div>
-        <div class="pc-stat"><div class="pcs-label">Секций</div><div class="pcs-val ok">${m.nSec} секц.</div></div>
-        <div class="pc-stat"><div class="pcs-label">Итоговый напор</div><div class="pcs-val ${hOk?'ok':'bad'}">${m.Hreal.toFixed(0)} м</div></div>
-        <div class="pc-stat"><div class="pcs-label">Мощность насоса</div><div class="pcs-val ${powerCls}">${m.Npump.toFixed(1)} кВт${m.powerExceeded ? ' ⚠️' : ''}</div></div>
-        <div class="pc-stat"><div class="pcs-label">КПД ступени</div><div class="pcs-val">${p.eff.toFixed(1)}%</div></div>
-      </div>
-      <div class="graph-tabs" data-idx="${idx}">
-        <div class="graph-tab active" data-mode="head">Напор</div>
-        <div class="graph-tab" data-mode="power">Мощность</div>
-        <div class="graph-tab" data-mode="eff">КПД</div>
-      </div>
-      <div class="graph-container" style="position:relative;">
-        <canvas id="graph_${idx}"></canvas>
-        <div class="graph-tooltip" id="tooltip_${idx}"></div>
-        <button class="graph-export-btn" title="Сохранить график как PNG" onclick="event.stopPropagation(); exportGraphToPNG(document.getElementById('graph_${idx}'), '${pOrig.name.replace(/'/g, "\\'")}')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        </button>
-      </div>
-      <div class="pc-footer">
-        ${qInZone && hOk ? '<span class="badge ok">Подходит</span>' : '<span class="badge warn">На границе зоны</span>'}
-        ${matBadge}
-        ${F !== 50 ? `<span class="badge info">ЧРП ${F} Гц</span>` : ''}
-        ${gasHtml}
-        <span style="font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;">ПЭД</span> ${motorHtml}
-        <span style="font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;">Гидрозащита</span> ${hydroHtml}
-      </div>
-    </div>`;
-  }).join('');
-
-  // Активация вкладок графиков
-  document.querySelectorAll('.graph-tabs').forEach(tabs => {
-    const idx = tabs.dataset.idx;
-    const canvas = document.getElementById(`graph_${idx}`);
-    const tooltip = document.getElementById(`tooltip_${idx}`);
-    const tabsArr = tabs.querySelectorAll('.graph-tab');
-    tabsArr.forEach(tab => {
-      tab.addEventListener('click', () => {
-        tabsArr.forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        const mode = tab.dataset.mode;
-        const m = matched[parseInt(idx)];
-        drawPumpGraph(canvas, m.p, Q50, H50, k, mode, tooltip);
-      });
+function showComparison() {
+  const selected = [];
+  document.querySelectorAll('.compare-checkbox:checked').forEach(cb => {
+    const idx = parseInt(cb.dataset.idx);
+    if (matchedResults[idx]) selected.push(matchedResults[idx]);
+  });
+  if (selected.length < 2) return;
+  let html = '<table class="compare-table"><thead><tr><th>Параметр</th>';
+  selected.forEach(m => html += `<th>${m.pOrig.name}</th>`);
+  html += '</tr></thead><tbody>';
+  const rows = [
+    ['Подача (расч.)', 'Qreal', ' м³/сут'],
+    ['Напор (расч.)', 'Hreal', ' м'],
+    ['Секций', 'nSec', ''],
+    ['Мощность насоса', 'Npump', ' кВт'],
+    ['ПЭД', '', ''],
+    ['Гидрозащита', '', '']
+  ];
+  rows.forEach(r => {
+    html += '<tr><td>' + r[0] + '</td>';
+    selected.forEach(m => {
+      let val = '';
+      if (r[0] === 'ПЭД') val = m.motor ? m.motor.name : '—';
+      else if (r[0] === 'Гидрозащита') val = m.hydro ? m.hydro.name : '—';
+      else val = m[r[1]] ? (m[r[1]].toFixed ? m[r[1]].toFixed(1) : m[r[1]]) : '—';
+      html += `<td>${val}${r[2]}</td>`;
     });
-    const activeTab = tabs.querySelector('.graph-tab.active');
-    const mode = activeTab ? activeTab.dataset.mode : 'head';
-    const m = matched[parseInt(idx)];
-    drawPumpGraph(canvas, m.p, Q50, H50, k, mode, tooltip);
+    html += '</tr>';
   });
+  html += '</tbody></table>';
+  document.getElementById('compare_content').innerHTML = html;
+  document.getElementById('compare_modal').style.display = 'flex';
 }
+function closeComparison() { document.getElementById('compare_modal').style.display = 'none'; }
 
-// Слушатели для автоподбора вязкости
-document.getElementById('s_temp').addEventListener('input', () => {
-  const viscField = document.getElementById('s_visc');
-  if (!viscField.value) {
-    const est = estimateViscosity(v('s_temp')||80, v('s_rho')||900);
-    document.getElementById('visc_hint').textContent = `Оставьте пустым — будет ≈${est} сП`;
-  }
-});
-document.getElementById('s_rho').addEventListener('input', () => {
-  const viscField = document.getElementById('s_visc');
-  if (!viscField.value) {
-    const est = estimateViscosity(v('s_temp')||80, v('s_rho')||900);
-    document.getElementById('visc_hint').textContent = `Оставьте пустым — будет ≈${est} сП`;
-  }
-});
+function updateViscHint() {
+  const viscInput = document.getElementById('s_visc');
+  const hint = document.getElementById('visc_hint');
+  if (!viscInput || !hint) return;
+  const val = parseFloat(viscInput.value);
+  if (isNaN(val) || val <= 0) hint.textContent = 'Пусто = 1 сП (вода), коррекция не нужна';
+  else if (val <= 1.1) hint.textContent = 'Вязкость ≤ 1.1 сП, коррекция не требуется';
+  else hint.textContent = `Вязкость ${val.toFixed(1)} сП, будет применена коррекция`;
+}
+document.getElementById('s_temp').addEventListener('input', updateViscHint);
+document.getElementById('s_rho').addEventListener('input', updateViscHint);
+document.getElementById('s_visc').addEventListener('input', updateViscHint);
+updateViscHint();
 </script>
 </body>
 </html>
